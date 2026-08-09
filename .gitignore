@@ -1,0 +1,23 @@
+# Build artifacts
+build/
+
+# Simulation waveforms (VCD)
+*.vcd
+*.vcd.gz
+
+# Verilator output
+obj_dir/
+
+# Vivado project directories
+*.cache/
+*.runs/
+*.hw/
+*.ip_user_files/
+*.sim/
+*.xpr
+*.jou
+*.log
+
+# Python cache
+__pycache__/
+*.pyc

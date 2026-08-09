@@ -1,0 +1,12 @@
+%Error: Cannot find file containing module: rtl
+        ... Looked in:
+             rtl
+             rtl.v
+             rtl.sv
+             rtl
+             rtl.v
+             rtl.sv
+             obj_dir/rtl
+             obj_dir/rtl.v
+             obj_dir/rtl.sv
+%Error: Exiting due to 1 error(s)
