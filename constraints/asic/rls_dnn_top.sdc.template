@@ -1,0 +1,49 @@
+# Aquila-MK2 ASIC constraint template
+#
+# This file is intentionally a TEMPLATE.  It is not executable until the
+# laboratory flow fills in the actual SCL180 timing/library environment and
+# approved interface timing assumptions.
+#
+# Required inputs before activation:
+#   TARGET_CLOCK_PERIOD_NS
+#   CLOCK_UNCERTAINTY_NS
+#   INPUT_DELAY_MAX_NS / INPUT_DELAY_MIN_NS
+#   OUTPUT_DELAY_MAX_NS / OUTPUT_DELAY_MIN_NS
+#   INPUT_DRIVE_CELL / OUTPUT_LOAD_MODEL
+#
+# Do not copy the FPGA XDC or the legacy pad-level SDC into an ASIC run.
+
+# TODO: set from the approved project timing target.
+# set TARGET_CLOCK_PERIOD_NS <LAB_VALUE>
+# set CLOCK_UNCERTAINTY_NS <LAB_VALUE>
+# set INPUT_DELAY_MAX_NS <LAB_VALUE>
+# set INPUT_DELAY_MIN_NS <LAB_VALUE>
+# set OUTPUT_DELAY_MAX_NS <LAB_VALUE>
+# set OUTPUT_DELAY_MIN_NS <LAB_VALUE>
+
+# Core top clock is the `clk` port of rls_dnn_top.
+# create_clock -name core_clk -period $TARGET_CLOCK_PERIOD_NS [get_ports clk]
+# set_clock_uncertainty $CLOCK_UNCERTAINTY_NS [get_clocks core_clk]
+
+# TODO: constrain every synchronous input relative to core_clk after the
+# source/sink timing contract is approved.  Include data, valid, ready,
+# configuration, and weight-load inputs as applicable.
+# set_input_delay -clock core_clk -max $INPUT_DELAY_MAX_NS [get_ports ...]
+# set_input_delay -clock core_clk -min $INPUT_DELAY_MIN_NS [get_ports ...]
+
+# TODO: constrain every synchronous output relative to core_clk.
+# set_output_delay -clock core_clk -max $OUTPUT_DELAY_MAX_NS [get_ports ...]
+# set_output_delay -clock core_clk -min $OUTPUT_DELAY_MIN_NS [get_ports ...]
+
+# TODO: use the actual SCL180 library pin/model names supplied by the lab.
+# set_driving_cell -lib_cell <LAB_INPUT_DRIVE_CELL> [get_ports ...]
+# set_load <LAB_OUTPUT_LOAD> [get_ports ...]
+
+# Reset is async asserted and synchronized internally.  Add a reset timing
+# exception only after the reset implementation and signoff methodology are
+# approved; do not enable a broad exception by default.
+# set_false_path -from [get_ports rst_n]
+
+# There are no generated clocks declared by the reviewed core RTL.  Do not
+# add clock groups, generated clocks, false paths, or multicycle paths until
+# a corresponding RTL path and timing rationale are documented.

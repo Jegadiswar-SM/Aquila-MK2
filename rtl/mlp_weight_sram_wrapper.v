@@ -1,13 +1,18 @@
 // =============================================================================
 // Module      : mlp_weight_sram_wrapper
-// Description : Behavioral wrapper for sky130 OpenRAM SRAM.
-//               Configured with a 16-bit write port (for easy sequential loading)
+// Description : Technology-independent behavioral model for the MLP weight
+//               memory.  The logical interface is configured with a 16-bit
+//               write port (for sequential loading)
 //               and a 256-bit read port (delivering 16 weights in parallel per cycle
 //               to the time-multiplexed MLP engine).
 //
 //               Total capacity: 8192 rows x 256 bits = 2.097 Megabits (~262 KB).
 //               We use 6257 rows for the 8->128->384->128->1 network.
 //
+// ASIC integration: replace the behavioral storage implementation with the
+// actual laboratory memory macro or a synthesized memory implementation while
+// preserving the port directions, address mapping, and one-cycle read latency.
+// No foundry-specific cell or timing model is referenced here.
 // Author      : MHDA RTL Hardening (ASIC prep)
 // SPDX-License-Identifier: Apache-2.0
 // =============================================================================
@@ -23,7 +28,7 @@ module mlp_weight_sram_wrapper (
     input  wire [16:0]  wload_addr, // 0 to 131071 (17-bit for word address)
     input  wire [15:0]  wload_data,
 
-    // Read Port (255-bit wide for parallel execution)
+    // Read Port (256-bit wide for parallel execution)
     input  wire         ren,
     input  wire [12:0]  raddr,      // 0 to 8191 (13-bit for row address)
     output reg  [255:0] rdata,

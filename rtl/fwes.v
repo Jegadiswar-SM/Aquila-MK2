@@ -29,14 +29,18 @@ module fwes (
 
     reg signed [15:0] e_w_prev;
 
+    // Keep the existing Q1.15 recurrence, but declare the intermediate at
+    // module scope so the RTL is accepted by the Verilog front-end used by
+    // the project.
+    wire signed [31:0] alpha_term;
+    assign alpha_term = ($signed(alpha_reg) * $signed(e_w_prev)) >>> 15;
+
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             e_weighted <= 16'sd0;
             e_w_prev   <= 16'sd0;
         end else if (e_valid) begin
             // alpha_term = alpha_reg * e_w_prev >>> 15 (Q1.15 multiply)
-            (* use_dsp = "yes" *) reg signed [31:0] alpha_term;
-            alpha_term = ($signed(alpha_reg) * $signed(e_w_prev)) >>> 15;
             e_weighted <= e_in - alpha_term[15:0];
             e_w_prev   <= e_in;
         end

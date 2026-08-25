@@ -24,6 +24,8 @@ module plwd #(
 
     input  wire        m_axis_tvalid,
     input  wire [15:0] m_axis_tdata,
+    input  wire        m_axis_tready,
+    input  wire        pipeline_active,
 
     // AXI4-Lite read interface
     input  wire [3:0]  s_axi_araddr,
@@ -49,22 +51,41 @@ module plwd #(
     // -------------------------------------------------------------------------
     reg [15:0] timeout_cnt;
     reg        pipeline_stall_fault;
+    reg        stall_monitor_armed;
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             timeout_cnt           <= VALID_TIMEOUT;
             pipeline_stall_fault  <= 1'b0;
+            stall_monitor_armed   <= 1'b0;
         end else begin
             if (m_axis_tvalid) begin
+                timeout_cnt <= VALID_TIMEOUT;
+                stall_monitor_armed <= 1'b1;
+                pipeline_stall_fault <= 1'b0;
+            end else if (pipeline_srst) begin
+                // A persistent empty output after recovery is the same
+                // condition; do not immediately retrigger until a new
+                // transaction has made the monitor active again.
+                timeout_cnt         <= VALID_TIMEOUT;
+                stall_monitor_armed <= 1'b0;
+                pipeline_stall_fault <= 1'b0;
+            end else if (!pipeline_active) begin
+                // IDLE is not a fault.  Arm the timeout only while the top
+                // level reports a real in-flight transaction.
+                timeout_cnt <= VALID_TIMEOUT;
+                stall_monitor_armed <= 1'b0;
+                pipeline_stall_fault <= 1'b0;
+            end else if (!stall_monitor_armed) begin
+                stall_monitor_armed <= 1'b1;
                 timeout_cnt <= VALID_TIMEOUT;
             end else if (timeout_cnt != 16'd0) begin
                 timeout_cnt <= timeout_cnt - 16'd1;
             end
 
-            if (timeout_cnt == 16'd0)
+            if (stall_monitor_armed && !m_axis_tvalid &&
+                !pipeline_srst && (timeout_cnt == 16'd0))
                 pipeline_stall_fault <= 1'b1;
-            else if (pipeline_srst)
-                pipeline_stall_fault <= 1'b0;
         end
     end
 
@@ -81,7 +102,7 @@ module plwd #(
             stuck_cnt          <= 5'd0;
             output_stuck_fault <= 1'b0;
         end else begin
-            if (m_axis_tvalid) begin
+            if (m_axis_tvalid && m_axis_tready) begin
                 if (m_axis_tdata == last_sample) begin
                     stuck_cnt <= (stuck_cnt == 5'd31) ? stuck_cnt : stuck_cnt + 5'd1;
                 end else begin
@@ -108,7 +129,7 @@ module plwd #(
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             global_sample_cnt <= 32'd0;
-        end else if (m_axis_tvalid) begin
+        end else if (m_axis_tvalid && m_axis_tready) begin
             global_sample_cnt <= global_sample_cnt + 32'd1;
         end
     end
@@ -178,7 +199,26 @@ module plwd #(
                     irq_fault     <= 1'b1;
                     rcv_state     <= IDLE;
                 end
+
+                default: begin
+                    rcv_state     <= IDLE;
+                    pipeline_srst <= 1'b0;
+                    irq_fault     <= 1'b0;
+                end
             endcase
+
+            // These actions were previously in later source-order always
+            // blocks and therefore overrode same-edge recovery assignments.
+            // Keep that priority explicit while giving each register one
+            // sequential owner.
+            if (s_axi_arvalid && (s_axi_araddr[3:0] == 4'h0))
+                irq_fault <= 1'b0;
+
+            if (s_axi_awvalid && s_axi_wvalid &&
+                (s_axi_awaddr[3:0] == 4'hC)) begin
+                fault_count_reg <= 8'd0;
+                fault_type_reg  <= 2'b00;
+            end
         end
     end
 
@@ -200,9 +240,6 @@ module plwd #(
                     default: s_axi_rdata <= 32'd0;
                 endcase
             end
-            // Clear irq_fault on read of fault_type_reg
-            if (s_axi_arvalid && (s_axi_araddr[3:0] == 4'h0))
-                irq_fault <= 1'b0;
         end
     end
 
@@ -219,8 +256,6 @@ module plwd #(
             if (s_axi_awvalid && s_axi_wvalid && (s_axi_awaddr[3:0] == 4'hC)) begin
                 s_axi_awready   <= 1'b1;
                 s_axi_wready    <= 1'b1;
-                fault_count_reg <= 8'd0;
-                fault_type_reg  <= 2'b00;
             end
         end
     end

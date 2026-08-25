@@ -78,7 +78,6 @@ module lat_prof (
             lat_ptdl_to_mlp <= 32'd0;
             lat_mlp_to_out  <= 32'd0;
             lat_total       <= 32'd0;
-            free_cnt_snap   <= 32'd0;
         end else begin
             if (mlp_out_valid) begin
                 // Snapshot intervals on output valid
@@ -96,6 +95,7 @@ module lat_prof (
         if (!rst_n) begin
             s_axi_rdata  <= 32'd0;
             s_axi_rvalid <= 1'b0;
+            free_cnt_snap <= 32'd0;
         end else begin
             if (s_axi_arvalid) begin
                 s_axi_rvalid <= 1'b1;

@@ -16,6 +16,7 @@
 module cbpf_2sos (
     input  wire        clk,
     input  wire        rst_n,
+    input  wire        srst,
 
     input  wire [15:0] x_in,         // raw input Q1.15
     input  wire        x_valid,
@@ -74,6 +75,10 @@ module cbpf_2sos (
             s_axi_awready <= 1'b0;
             s_axi_wready  <= 1'b0;
             bypass_reg    <= 1'b0;
+        end else if (srst) begin
+            s_axi_awready <= 1'b0;
+            s_axi_wready  <= 1'b0;
+            bypass_reg    <= 1'b0;
         end else begin
             s_axi_awready <= 1'b0;
             s_axi_wready  <= 1'b0;
@@ -103,12 +108,39 @@ module cbpf_2sos (
     reg        s1_valid_stg1;
     reg        s1_valid_stg2;
 
+    // Preserve the existing 32-bit register truncation, but make the
+    // intermediate sign extension explicit so ASIC lint cannot reinterpret
+    // the mixed-width fixed-point sum.
+    wire signed [45:0] x_ext_s1 = $signed({{16{x_in[15]}}, x_in, 14'b0});
+    wire signed [45:0] a1_shift_s1 = {{14{mul_a1_s1[31]}}, (mul_a1_s1 >>> 15)};
+    wire signed [45:0] a2_shift_s1 = {{14{mul_a2_s1[31]}}, (mul_a2_s1 >>> 15)};
+    wire signed [45:0] w0_sum_s1 = x_ext_s1 + a1_shift_s1 + a2_shift_s1;
+
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             w1_s1        <= 32'sd0;
             w2_s1        <= 32'sd0;
             w0_s1        <= 32'sd0;
             y_s1         <= 32'sd0;
+            mul_a1_s1    <= 32'sd0;
+            mul_a2_s1    <= 32'sd0;
+            mul_b0_s1    <= 32'sd0;
+            mul_b1_s1    <= 32'sd0;
+            mul_b2_s1    <= 32'sd0;
+            y_s1_trunc   <= 16'sd0;
+            s1_valid_stg1 <= 1'b0;
+            s1_valid_stg2 <= 1'b0;
+            clip_s1      <= 1'b0;
+        end else if (srst) begin
+            w1_s1        <= 32'sd0;
+            w2_s1        <= 32'sd0;
+            w0_s1        <= 32'sd0;
+            y_s1         <= 32'sd0;
+            mul_a1_s1    <= 32'sd0;
+            mul_a2_s1    <= 32'sd0;
+            mul_b0_s1    <= 32'sd0;
+            mul_b1_s1    <= 32'sd0;
+            mul_b2_s1    <= 32'sd0;
             y_s1_trunc   <= 16'sd0;
             s1_valid_stg1 <= 1'b0;
             s1_valid_stg2 <= 1'b0;
@@ -120,8 +152,7 @@ module cbpf_2sos (
                 // Stage 1: w0 = x_ext + A1*w1 + A2*w2
                 mul_a1_s1 <= $signed(A1_S1) * $signed(w1_s1);
                 mul_a2_s1 <= $signed(A2_S1) * $signed(w2_s1);
-                w0_s1     <= {{16{x_in[15]}}, x_in, 14'b0}
-                           + (mul_a1_s1 >>> 15) + (mul_a2_s1 >>> 15);
+                w0_s1     <= w0_sum_s1[31:0];
             end
 
             s1_valid_stg2 <= s1_valid_stg1;
@@ -163,12 +194,36 @@ module cbpf_2sos (
     reg        s2_valid_stg1;
     reg        s2_valid_stg2;
 
+    wire signed [45:0] a1_shift_s2 = {{14{mul_a1_s2[31]}}, (mul_a1_s2 >>> 15)};
+    wire signed [45:0] a2_shift_s2 = {{14{mul_a2_s2[31]}}, (mul_a2_s2 >>> 15)};
+    wire signed [45:0] w0_sum_s2 = $signed({{16{y_s1_trunc[15]}}, y_s1_trunc, 14'b0})
+                                  + a1_shift_s2 + a2_shift_s2;
+
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             w1_s2        <= 32'sd0;
             w2_s2        <= 32'sd0;
             w0_s2        <= 32'sd0;
             y_s2         <= 32'sd0;
+            mul_a1_s2    <= 32'sd0;
+            mul_a2_s2    <= 32'sd0;
+            mul_b0_s2    <= 32'sd0;
+            mul_b1_s2    <= 32'sd0;
+            mul_b2_s2    <= 32'sd0;
+            y_s2_trunc   <= 16'sd0;
+            s2_valid_stg1 <= 1'b0;
+            s2_valid_stg2 <= 1'b0;
+            clip_s2      <= 1'b0;
+        end else if (srst) begin
+            w1_s2        <= 32'sd0;
+            w2_s2        <= 32'sd0;
+            w0_s2        <= 32'sd0;
+            y_s2         <= 32'sd0;
+            mul_a1_s2    <= 32'sd0;
+            mul_a2_s2    <= 32'sd0;
+            mul_b0_s2    <= 32'sd0;
+            mul_b1_s2    <= 32'sd0;
+            mul_b2_s2    <= 32'sd0;
             y_s2_trunc   <= 16'sd0;
             s2_valid_stg1 <= 1'b0;
             s2_valid_stg2 <= 1'b0;
@@ -179,8 +234,7 @@ module cbpf_2sos (
             if (s1_valid_stg2) begin
                 mul_a1_s2 <= $signed(A1_S2) * $signed(w1_s2);
                 mul_a2_s2 <= $signed(A2_S2) * $signed(w2_s2);
-                w0_s2     <= {{16{y_s1_trunc[15]}}, y_s1_trunc, 14'b0}
-                           + (mul_a1_s2 >>> 15) + (mul_a2_s2 >>> 15);
+                w0_s2     <= w0_sum_s2[31:0];
             end
 
             s2_valid_stg2 <= s2_valid_stg1;
@@ -207,6 +261,9 @@ module cbpf_2sos (
     // -------------------------------------------------------------------------
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
+            y_out   <= 16'sd0;
+            y_valid <= 1'b0;
+        end else if (srst) begin
             y_out   <= 16'sd0;
             y_valid <= 1'b0;
         end else begin

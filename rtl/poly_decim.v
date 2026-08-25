@@ -16,6 +16,7 @@
 module poly_decim (
     input  wire        clk,
     input  wire        rst_n,
+    input  wire        srst,
     input  wire        sample_enable_in,    // 8 kHz strobe from top-level
     input  wire [2:0]  decim_ratio,         // AXI4-Lite: 001=1:1, 010=1:2, 100=1:4
 
@@ -33,17 +34,33 @@ module poly_decim (
             decim_cnt        <= 3'b000;
             sample_enable_rls <= 1'b0;
             decim_cnt_dbg    <= 3'b000;
+        end else if (srst) begin
+            decim_cnt         <= 3'b000;
+            sample_enable_rls <= 1'b0;
+            decim_cnt_dbg     <= 3'b000;
         end else begin
             if (sample_enable_in) begin
-                decim_cnt <= decim_cnt + 3'b001;
-                if (decim_ratio == 3'b001)
-                    sample_enable_rls <= 1'b1;           // 1:1 — every sample
-                else if (decim_ratio == 3'b010)
-                    sample_enable_rls <= (decim_cnt == 3'b000);  // 1:2 — every other
-                else if (decim_ratio == 3'b100)
-                    sample_enable_rls <= (decim_cnt[1:0] == 2'b00); // 1:4 — every 4th
-                else
-                    sample_enable_rls <= 1'b1;           // default: passthrough
+                // decim_cnt is a phase counter, not a free-running counter.
+                // The first accepted sample in each ratio phase is emitted.
+                if (decim_ratio == 3'b001) begin
+                    decim_cnt         <= 3'd0;
+                    sample_enable_rls <= 1'b1;            // 1:1 — every sample
+                end else if (decim_ratio == 3'b010) begin
+                    sample_enable_rls <= (decim_cnt == 3'd0); // 1:2 — every other
+                    if (decim_cnt >= 3'd1)
+                        decim_cnt <= 3'd0;
+                    else
+                        decim_cnt <= 3'd1;
+                end else if (decim_ratio == 3'b100) begin
+                    sample_enable_rls <= (decim_cnt == 3'd0); // 1:4 — every fourth
+                    if (decim_cnt >= 3'd3)
+                        decim_cnt <= 3'd0;
+                    else
+                        decim_cnt <= decim_cnt + 3'd1;
+                end else begin
+                    decim_cnt         <= 3'd0;
+                    sample_enable_rls <= 1'b1;            // default: passthrough
+                end
 
                 decim_cnt_dbg <= decim_cnt;
             end else begin

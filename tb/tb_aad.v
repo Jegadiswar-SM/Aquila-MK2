@@ -4,6 +4,7 @@
 module tb_aad;
     reg        clk;
     reg        rst_n;
+    reg        srst;
     reg [15:0] x_in;
     reg        x_valid;
     reg [3:0]  s_axi_awaddr;
@@ -20,6 +21,7 @@ module tb_aad;
     aad dut (
         .clk            (clk),
         .rst_n          (rst_n),
+        .srst           (srst),
         .x_in           (x_in),
         .x_valid        (x_valid),
         .s_axi_awaddr   (s_axi_awaddr),
@@ -43,7 +45,7 @@ module tb_aad;
         $display("===== tb_aad: start =====");
         pass = 0; fail = 0;
 
-        rst_n = 1'b0; x_valid = 1'b0; x_in = 16'sd0;
+        rst_n = 1'b0; srst = 1'b0; x_valid = 1'b0; x_in = 16'sd0;
         s_axi_awaddr = 4'h0; s_axi_awvalid = 1'b0;
         s_axi_wdata = 32'h0; s_axi_wvalid = 1'b0;
 
@@ -71,11 +73,25 @@ module tb_aad;
 
         // Return to silence — should deassert
         x_in = 16'sd0; x_valid = 1'b1;
-        repeat(100) @(posedge clk);
+        // The configured long-term accumulator has a 2^12 decay constant.
+        // With the default thresholds, the comparator remains active for
+        // hundreds of cycles after the loud interval; wait for the specified
+        // DEASSERT_CNT hysteresis to complete rather than assuming 100 cycles.
+        repeat(500) @(posedge clk);
         if (!signal_active) begin
             $display("PASS: returned to inactive"); pass = pass + 1;
         end else begin
             $display("FAIL: expected inactive after silence"); fail = fail + 1;
+        end
+
+        srst = 1'b1;
+        @(posedge clk);
+        #1;
+        srst = 1'b0;
+        if (signal_active !== 1'b0 || acc_A_dbg !== 40'd0 || acc_B_dbg !== 40'd0) begin
+            $display("FAIL: soft reset did not clear AAD state"); fail = fail + 1;
+        end else begin
+            $display("PASS: soft reset cleared AAD state"); pass = pass + 1;
         end
 
         x_valid = 1'b0;

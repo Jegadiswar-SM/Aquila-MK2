@@ -4,6 +4,7 @@
 module tb_rcim;
     reg        clk;
     reg        rst_n;
+    reg        srst;
     reg [15:0] d_in;
     reg [15:0] x_in;
     reg        samples_valid;
@@ -19,6 +20,7 @@ module tb_rcim;
     rcim dut (
         .clk               (clk),
         .rst_n             (rst_n),
+        .srst              (srst),
         .d_in              (d_in),
         .x_in              (x_in),
         .samples_valid     (samples_valid),
@@ -41,7 +43,7 @@ module tb_rcim;
         $display("===== tb_rcim: start =====");
         pass = 0; fail = 0;
 
-        rst_n = 1'b0; samples_valid = 1'b0;
+        rst_n = 1'b0; srst = 1'b0; samples_valid = 1'b0;
         d_in = 16'sd0; x_in = 16'sd0;
         s_axi_awaddr = 5'h0; s_axi_awvalid = 1'b0;
         s_axi_wdata = 32'h0; s_axi_wvalid = 1'b0;
@@ -73,6 +75,16 @@ module tb_rcim;
             $display("PASS: x_out_muxed = 0 during fault"); pass = pass + 1;
         end else begin
             $display("FAIL: x_out_muxed != 0 during fault (0x%04h)", x_out_muxed); fail = fail + 1;
+        end
+
+        srst = 1'b1;
+        @(posedge clk);
+        #1;
+        srst = 1'b0;
+        if (ref_channel_fault !== 1'b0 || x_out_muxed !== 16'd0) begin
+            $display("FAIL: soft reset did not clear RCIM state"); fail = fail + 1;
+        end else begin
+            $display("PASS: soft reset cleared RCIM state"); pass = pass + 1;
         end
 
         samples_valid = 1'b0;

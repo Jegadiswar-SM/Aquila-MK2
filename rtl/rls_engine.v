@@ -38,6 +38,11 @@ module rls_engine #(
     localparam ACC_W = 40;
     localparam FRAC  = 15;
     localparam signed [15:0] TWO_Q214 = 16'sh7FFF; // +1.99994: saturated "2.0" in signed Q2.14
+    // y_acc is Q?.15 and y_hat takes the signed Q1.15 slice [30:15].
+    // These are the exact accumulator limits corresponding to 0x7fff and
+    // 0x8000 in that output format.
+    localparam signed [ACC_W-1:0] Y_HAT_MAX_ACC = 40'sh003FFF8000;
+    localparam signed [ACC_W-1:0] Y_HAT_MIN_ACC = 40'shFFC0000000;
 
     wire [15:0] lambda_used = (lambda_in == 16'd0) ? LAMBDA_Q15[15:0] : lambda_in;
 
@@ -52,8 +57,6 @@ module rls_engine #(
     reg signed [W-1:0]     e_reg;
     reg signed [W-1:0]     d_pipe;
     reg                    s1_valid;
-
-    integer i;
 
     // =========================================================================
     // E1: 2nd-Order Newton-Raphson — 32-entry combinational ROM function
@@ -125,21 +128,21 @@ module rls_engine #(
             e_reg    <= 16'sd0;
             d_pipe   <= 16'sd0;
             s1_valid <= 1'b0;
-            for (i = 0; i < N; i = i + 1)
-                x_dly[i] <= 16'sd0;
+            for (integer i_s0_reset = 0; i_s0_reset < N; i_s0_reset = i_s0_reset + 1)
+                x_dly[i_s0_reset] <= 16'sd0;
         end else if (srst) begin
             y_acc    <= {ACC_W{1'b0}};
             xTx_acc  <= {ACC_W{1'b0}};
             e_reg    <= 16'sd0;
             d_pipe   <= 16'sd0;
             s1_valid <= 1'b0;
-            for (i = 0; i < N; i = i + 1)
-                x_dly[i] <= 16'sd0;
+            for (integer i_s0_srst = 0; i_s0_srst < N; i_s0_srst = i_s0_srst + 1)
+                x_dly[i_s0_srst] <= 16'sd0;
         end else begin
             s1_valid <= sample_en;
             if (sample_en) begin
-                for (i = N-1; i > 0; i = i - 1)
-                    x_dly[i] <= x_dly[i-1];
+                for (integer i_s0_shift = N-1; i_s0_shift > 0; i_s0_shift = i_s0_shift - 1)
+                    x_dly[i_s0_shift] <= x_dly[i_s0_shift-1];
                 x_dly[0] <= x_in;
                 d_pipe <= d_in;
 
@@ -172,25 +175,29 @@ module rls_engine #(
             nr_denom_p1 <= 16'sd0;
             nr_x1       <= 16'sd0;
             nr_p1_valid <= 1'b0;
-            for (i = 0; i < N; i = i + 1) x_dly_p1[i] <= 16'sd0;
+            for (integer i_s1_reset = 0; i_s1_reset < N; i_s1_reset = i_s1_reset + 1)
+                x_dly_p1[i_s1_reset] <= 16'sd0;
             e_reg_p1    <= 16'sd0;
             d_pipe_p1   <= 16'sd0;
         end else if (srst) begin
             nr_p1_valid <= 1'b0;
-            for (i = 0; i < N; i = i + 1) x_dly_p1[i] <= 16'sd0;
+            for (integer i_s1_srst = 0; i_s1_srst < N; i_s1_srst = i_s1_srst + 1)
+                x_dly_p1[i_s1_srst] <= 16'sd0;
             e_reg_p1    <= 16'sd0;
             d_pipe_p1   <= 16'sd0;
         end else begin
             nr_p1_valid <= s1_valid;
             if (s1_valid) begin
                 // Pipeline x_dly, e_reg, d_pipe for weight update in STAGE2
-                for (i = 0; i < N; i = i + 1)
-                    x_dly_p1[i] <= x_dly[i];
+                for (integer i_s1_pipe = 0; i_s1_pipe < N; i_s1_pipe = i_s1_pipe + 1)
+                    x_dly_p1[i_s1_pipe] <= x_dly[i_s1_pipe];
                 e_reg_p1  <= e_reg;
                 d_pipe_p1 <= d_pipe;
 
-                if (y_acc[39:30] != 10'b0)
+                if (y_acc > Y_HAT_MAX_ACC)
                     y_hat <= 16'sh7FFF;
+                else if (y_acc < Y_HAT_MIN_ACC)
+                    y_hat <= 16'sh8000;
                 else
                     y_hat <= y_acc[30:15];
 
@@ -259,8 +266,8 @@ module rls_engine #(
             p_scalar    <= 16'sh0800;
             nr_x2       <= 16'sd0;
             nr_p2_valid <= 1'b0;
-            for (i = 0; i < N; i = i + 1)
-                w[i] <= 16'sd0;
+            for (integer i_s2_reset = 0; i_s2_reset < N; i_s2_reset = i_s2_reset + 1)
+                w[i_s2_reset] <= 16'sd0;
         end else if (srst) begin
             nr_p2_valid <= 1'b0;
             // w[] and p_scalar preserved intentionally

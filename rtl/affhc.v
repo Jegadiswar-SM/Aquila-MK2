@@ -91,6 +91,7 @@ module affhc #(
                     5'h08: lambda_fast   <= s_axi_wdata[15:0];
                     5'h0C: threshold_up_reg   <= s_axi_wdata[15:0];
                     5'h10: threshold_down_reg <= s_axi_wdata[15:0];
+                    default: ;
                 endcase
             end
         end
@@ -99,9 +100,14 @@ module affhc #(
     // -------------------------------------------------------------------------
     // Delta-e computation
     // -------------------------------------------------------------------------
-    assign delta_e = ($signed(e_in) > $signed(e_prev))
-        ? ($signed(e_in) - $signed(e_prev))
-        : ($signed(e_prev) - $signed(e_in));
+    // The maximum absolute distance between two signed 16-bit samples is
+    // 65535, so sign-extend before subtracting.  Computing the subtraction at
+    // 16-bit expression width silently wrapped the extreme boundary case.
+    wire signed [16:0] e_in_ext   = {e_in[15], e_in};
+    wire signed [16:0] e_prev_ext = {e_prev[15], e_prev};
+    assign delta_e = (e_in_ext > e_prev_ext)
+        ? (e_in_ext - e_prev_ext)
+        : (e_prev_ext - e_in_ext);
 
     // -------------------------------------------------------------------------
     // FSM and counters (all clocked on posedge clk)
@@ -125,6 +131,12 @@ module affhc #(
 
             // Lockout counter
             if (lockout_active) begin
+                // Hysteresis evidence from the transition that entered
+                // LOCKOUT must not be reused after the target state is
+                // reached.  Otherwise the first cycle in TRACKING/FAST can
+                // immediately trigger the next upward/downward transition.
+                cnt_up   <= 3'd0;
+                cnt_down <= 4'd0;
                 if (e_valid) begin
                     if (lockout_cnt == 6'd0) begin
                         lockout_active <= 1'b0;
@@ -139,7 +151,7 @@ module affhc #(
                     cnt_up   <= (cnt_up == {DWELL_UP{1'b1}}) ? cnt_up : cnt_up + 3'd1;
                     cnt_down <= 4'd0;
                 end else if (delta_e < {1'b0, threshold_down_reg}) begin
-                    cnt_down <= (cnt_down == {DWELL_DOWN{1'b1}}) ? cnt_down : cnt_down + 4'd1;
+                    cnt_down <= (cnt_down == 4'hF) ? cnt_down : cnt_down + 4'd1;
                     cnt_up   <= 3'd0;
                 end else begin
                     cnt_up   <= 3'd0;
@@ -176,6 +188,9 @@ module affhc #(
                             next_state     <= TRACKING;
                             state          <= LOCKOUT;
                         end
+                    end
+                    default: begin
+                        state <= STEADY;
                     end
                 endcase
             end

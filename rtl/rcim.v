@@ -30,6 +30,7 @@ module rcim #(
 )(
     input  wire        clk,
     input  wire        rst_n,
+    input  wire        srst,
 
     input  wire [15:0] d_in,
     input  wire [15:0] x_in,
@@ -59,6 +60,11 @@ module rcim #(
             s_axi_wready   <= 1'b0;
             corr_threshold <= 16'h1999;
             ratio_shift    <= 4'd5;  // 1/32 sliding window
+        end else if (srst) begin
+            s_axi_awready  <= 1'b0;
+            s_axi_wready   <= 1'b0;
+            corr_threshold <= 16'h1999;
+            ratio_shift    <= 4'd5;
         end else begin
             s_axi_awready <= 1'b0;
             s_axi_wready  <= 1'b0;
@@ -86,11 +92,18 @@ module rcim #(
             ref_power_acc <= 40'sd0;
             mul_dx        <= 32'sd0;
             mul_xx        <= 32'sd0;
+        end else if (srst) begin
+            corr_acc      <= 40'sd0;
+            ref_power_acc <= 40'sd0;
+            mul_dx        <= 32'sd0;
+            mul_xx        <= 32'sd0;
         end else if (samples_valid) begin
             mul_dx <= $signed(d_in) * $signed(x_in);
             mul_xx <= $signed(x_in) * $signed(x_in);
-            corr_acc      <= corr_acc      - (corr_acc      >>> ratio_shift) + $signed(mul_dx);
-            ref_power_acc <= ref_power_acc - (ref_power_acc >>> ratio_shift) + $signed(mul_xx);
+            corr_acc      <= corr_acc      - (corr_acc      >>> ratio_shift) +
+                             $signed({{8{mul_dx[31]}}, mul_dx});
+            ref_power_acc <= ref_power_acc - (ref_power_acc >>> ratio_shift) +
+                             $signed({{8{mul_xx[31]}}, mul_xx});
         end
     end
 
@@ -149,11 +162,15 @@ module rcim #(
         if (!rst_n) begin
             mul_nr1 <= 32'sd0;
             mul_nr2 <= 32'sd0;
+        end else if (srst) begin
+            mul_nr1 <= 32'sd0;
+            mul_nr2 <= 32'sd0;
         end else begin
             // NR: norm * recip → Q2.30, then 2 - result → Q1.15
             mul_nr1 <= $signed(recip_approx) * $signed(ref_power_norm);
             // refined = recip * (2 - mul_nr1[30:15]) >> 15
-            mul_nr2 <= $signed(recip_approx) * $signed({1'b0, 16'hFFFF} - mul_nr1[30:15]);
+            mul_nr2 <= $signed(recip_approx) *
+                       $signed({1'b0, 16'hFFFF} - mul_nr1[30:15]);
         end
     end
 
@@ -165,15 +182,17 @@ module rcim #(
     wire [15:0] corr_mag;
     wire [15:0] norm_corr;
 
-    assign corr_mag = corr_acc[31] ? (~corr_acc[30:15] + 16'd1) : corr_acc[30:15];
+    assign corr_mag = corr_acc[39] ? (~corr_acc[30:15] + 16'd1) : corr_acc[30:15];
 
     (* use_dsp = "yes" *) reg signed [31:0] mul_norm;
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             mul_norm <= 32'sd0;
+        end else if (srst) begin
+            mul_norm <= 32'sd0;
         end else begin
-            mul_norm <= $signed(corr_mag) * $signed(refined_recip);
+            mul_norm <= {16'd0, corr_mag} * {16'd0, refined_recip};
         end
     end
 
@@ -187,6 +206,10 @@ module rcim #(
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
+            fault_cnt         <= 8'd0;
+            recover_cnt       <= 8'd0;
+            ref_channel_fault <= 1'b0;
+        end else if (srst) begin
             fault_cnt         <= 8'd0;
             recover_cnt       <= 8'd0;
             ref_channel_fault <= 1'b0;
@@ -212,6 +235,8 @@ module rcim #(
     // -------------------------------------------------------------------------
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
+            x_out_muxed <= 16'sd0;
+        end else if (srst) begin
             x_out_muxed <= 16'sd0;
         end else begin
             x_out_muxed <= ref_channel_fault ? 16'sd0 : x_in;

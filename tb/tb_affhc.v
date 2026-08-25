@@ -54,9 +54,32 @@ module tb_affhc;
             $display("FAIL: initial state=%b lambda=0x%04h", fsm_state_dbg, lambda_out); fail = fail + 1;
         end
 
+        force dut.e_in = 16'sh7fff;
+        force dut.e_prev = 16'sh8000;
+        #1;
+        if (dut.delta_e !== 17'h0ffff) begin
+            $display("FAIL: extreme signed delta=%h", dut.delta_e); fail = fail + 1;
+        end else begin
+            $display("PASS: extreme signed delta"); pass = pass + 1;
+        end
+        release dut.e_in;
+        release dut.e_prev;
+
         // Inject large delta-e to trigger TRACKING
-        e_in = 16'sd3000; e_valid = 1'b1;
-        repeat(8) @(posedge clk);
+        // Alternate the error so |e(n)-e(n-1)| remains above the threshold
+        // for the configured dwell interval.  Holding 3000 would produce one
+        // large delta followed by zero deltas.
+        e_valid = 1'b1;
+        repeat(8) begin
+            @(negedge clk);
+            e_in = (e_in == 16'sd3000) ? 16'sd0 : 16'sd3000;
+        end
+        // Once TRACKING is reached, keep the delta in the hysteresis band so
+        // the FSM does not intentionally advance to FAST.
+        repeat(40) begin
+            @(negedge clk);
+            e_in = (e_in == 16'sd256) ? 16'sd0 : 16'sd256;
+        end
         if (fsm_state_dbg == 2'b01) begin
             $display("PASS: transition to TRACKING"); pass = pass + 1;
         end else begin
@@ -64,8 +87,11 @@ module tb_affhc;
         end
 
         // Inject small delta-e to return to STEADY
-        e_in = 16'sd50; e_valid = 1'b1;
-        repeat(16) @(posedge clk);
+        repeat(12) begin
+            @(negedge clk);
+            e_in = (e_in == 16'sd50) ? 16'sd0 : 16'sd50;
+        end
+        repeat(50) @(posedge clk);
         if (fsm_state_dbg == 2'b00) begin
             $display("PASS: returned to STEADY"); pass = pass + 1;
         end else begin

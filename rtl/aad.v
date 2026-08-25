@@ -20,6 +20,7 @@ module aad #(
 )(
     input  wire        clk,
     input  wire        rst_n,
+    input  wire        srst,
 
     input  wire [15:0] x_in,
     input  wire        x_valid,
@@ -48,6 +49,10 @@ module aad #(
             s_axi_awready   <= 1'b0;
             s_axi_wready    <= 1'b0;
             ratio_shift_reg <= RATIO_SHIFT;
+        end else if (srst) begin
+            s_axi_awready   <= 1'b0;
+            s_axi_wready    <= 1'b0;
+            ratio_shift_reg <= RATIO_SHIFT;
         end else begin
             s_axi_awready <= 1'b0;
             s_axi_wready  <= 1'b0;
@@ -64,13 +69,27 @@ module aad #(
     // -------------------------------------------------------------------------
     reg signed [31:0] x_sq;
     (* use_dsp = "yes" *) reg signed [31:0] mul_tmp;
+    reg                  mul_valid;
+    reg                  x_sq_valid;
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            x_sq <= 32'sd0;
-        end else if (x_valid) begin
-            mul_tmp <= $signed(x_in) * $signed(x_in);
-            x_sq    <= mul_tmp;
+            x_sq       <= 32'sd0;
+            mul_tmp    <= 32'sd0;
+            mul_valid  <= 1'b0;
+            x_sq_valid <= 1'b0;
+        end else if (srst) begin
+            x_sq       <= 32'sd0;
+            mul_tmp    <= 32'sd0;
+            mul_valid  <= 1'b0;
+            x_sq_valid <= 1'b0;
+        end else begin
+            mul_valid  <= x_valid;
+            x_sq_valid <= mul_valid;
+            if (x_valid)
+                mul_tmp <= $signed(x_in) * $signed(x_in);
+            if (mul_valid)
+                x_sq <= mul_tmp;
         end
     end
 
@@ -85,7 +104,10 @@ module aad #(
         if (!rst_n) begin
             acc_A <= 40'd0;
             acc_B <= 40'd0;
-        end else if (x_valid) begin
+        end else if (srst) begin
+            acc_A <= 40'd0;
+            acc_B <= 40'd0;
+        end else if (x_sq_valid) begin
             acc_A <= acc_A - (acc_A >>> SHORT_SHIFT) + $signed({8'b0, x_sq});
             acc_B <= acc_B - (acc_B >>> LONG_SHIFT)  + $signed({8'b0, x_sq});
         end
@@ -104,7 +126,9 @@ module aad #(
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             assert_cnt <= 3'd0;
-        end else if (x_valid) begin
+        end else if (srst) begin
+            assert_cnt <= 3'd0;
+        end else if (x_sq_valid) begin
             if (activity_cmp)
                 assert_cnt <= (assert_cnt == 3'd7) ? assert_cnt : assert_cnt + 3'd1;
             else
@@ -119,7 +143,9 @@ module aad #(
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             deassert_cnt <= 7'd0;
-        end else if (x_valid && signal_active) begin
+        end else if (srst) begin
+            deassert_cnt <= 7'd0;
+        end else if (x_sq_valid && signal_active) begin
             if (~activity_cmp)
                 deassert_cnt <= (deassert_cnt == 7'd127) ? deassert_cnt : deassert_cnt + 7'd1;
             else
@@ -132,6 +158,11 @@ module aad #(
     // -------------------------------------------------------------------------
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
+            signal_active <= 1'b0;
+            clk_gate_en   <= 1'b1;
+            acc_A_dbg     <= 40'd0;
+            acc_B_dbg     <= 40'd0;
+        end else if (srst) begin
             signal_active <= 1'b0;
             clk_gate_en   <= 1'b1;
             acc_A_dbg     <= 40'd0;

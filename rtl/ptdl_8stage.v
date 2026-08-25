@@ -22,6 +22,7 @@
 module ptdl_8stage (
     input  wire        clk,
     input  wire        rst_n,
+    input  wire        srst,
     input  wire        sample_en,         // Shift enable (from rls_valid_out)
 
     input  wire signed [15:0] e_in,       // Current error residual Q1.15
@@ -37,6 +38,9 @@ module ptdl_8stage (
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
+            for (i = 0; i < 8; i = i + 1)
+                sr[i] <= 16'sd0;
+        end else if (srst) begin
             for (i = 0; i < 8; i = i + 1)
                 sr[i] <= 16'sd0;
         end else if (sample_en) begin
