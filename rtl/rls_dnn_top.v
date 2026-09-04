@@ -67,6 +67,9 @@ module rls_dnn_top (
     // =========================================================================
     wire signed [15:0] d_in = s_axis_tdata[15:0];
     wire signed [15:0] x_in = s_axis_tdata[31:16];
+    // Keep this declaration before the AXI-S admission logic. Older Incisive
+    // ncvlog versions reject a net referenced before its declaration.
+    wire               plwd_pipeline_srst;
 
     // =========================================================================
     // AXI-S input gating
@@ -129,7 +132,6 @@ module rls_dnn_top (
     reg signed [15:0]  mlp_error_hold;
 
     // --- PLWD ---
-    wire               plwd_pipeline_srst;
     wire               plwd_irq_fault;
 
     // --- Control/status registers and decode ---
@@ -405,11 +407,24 @@ module rls_dnn_top (
     wire [12:0]   sram_raddr;
     wire [255:0]  sram_rdata;
     wire          sram_rvalid;
+    // Programming and inference are mutually exclusive at the adapter
+    // boundary. A write presented while a transaction is active is ignored;
+    // software must program only while the stream is quiescent.
+    wire          program_mode = wload_en && !transaction_active && !ptdl_valid_d;
+    wire          mlp_bias_load_en = program_mode &&
+        (((wload_addr >= 17'd1024) && (wload_addr < 17'd1152)) ||
+         ((wload_addr >= 17'd50304) && (wload_addr < 17'd50688)) ||
+         ((wload_addr >= 17'd99840) && (wload_addr < 17'd99968)) ||
+         (wload_addr == 17'd100096));
+    wire [9:0]    mlp_bias_load_addr =
+        (wload_addr < 17'd50304) ? (wload_addr - 17'd1024) :
+        (wload_addr < 17'd99840) ? 10'd128 + (wload_addr - 17'd50304) :
+        (wload_addr < 17'd100096) ? 10'd512 + (wload_addr - 17'd99840) : 10'd640;
 
     mlp_weight_sram_wrapper u_sram (
         .clk        (clk),
         .rst_n      (rst_n_sync),
-        .wload_en   (wload_en),
+        .wload_en   (program_mode),
         .wload_addr (wload_addr),
         .wload_data (wload_data),
         .ren        (sram_ren),
@@ -425,6 +440,9 @@ module rls_dnn_top (
         .srst         (plwd_pipeline_srst),
         .en_in        (ptdl_valid_d),
         .features_in  (ptdl_taps),
+        .bias_load_en (mlp_bias_load_en),
+        .bias_load_addr(mlp_bias_load_addr),
+        .bias_load_data(wload_data),
         .ren          (sram_ren),
         .raddr        (sram_raddr),
         .rdata        (sram_rdata),

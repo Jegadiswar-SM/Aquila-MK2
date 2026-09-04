@@ -1,0 +1,13 @@
+
+ 	 Check Design Report (c)
+	 ------------------- 
+
+  Unresolved References & Empty Modules
+  ------------------------------------- 
+No unresolved references in design 'aquila_scl180_top'
+
+design 'aquila_scl180_top' has the following empty module(s)
+spram_8192_32
+Total number of empty modules in design 'aquila_scl180_top' : 1
+
+  Done Checking the design.

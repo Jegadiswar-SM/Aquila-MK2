@@ -1,0 +1,23 @@
+//
+// File created by:  xrun
+// Do not modify this file
+//
+-amsdlibdir
+cadence/xcelium/asic_elab/AMSD
+-MESSAGES
++EMGRLOG
+xrun.log
+-XLSTIME
+1788432029
+-XLKEEP
+-XLMODE
+cadence/xcelium/asic_elab/run.lnx8664.22.09.d
+-RUNMODE
+-CDSLIB
+cadence/xcelium/asic_elab/run.lnx8664.22.09.d/cds.lib
+-HDLVAR
+cadence/xcelium/asic_elab/run.lnx8664.22.09.d/hdl.var
+-XLNAME
+xrun
+-XLVERSION
+"TOOL:	xrun(64)	22.09-s003"

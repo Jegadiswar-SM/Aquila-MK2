@@ -1,0 +1,21 @@
+Aquila C2S execution checkpoint — Xcelium
+Date: 2026-09-03
+Setup: source /home/install/cshrc
+Executable: /home/install/XCELIUM2209/tools.lnx86/inca/bin/64bit/xrun
+Observed version: 22.09-s003
+
+Baseline RTL:
+  Filelist: cadence/incisive/filelists/chip/tb_rls_dnn_top.f
+  Top: tb_rls_dnn_top
+  Result: PASS — compile/elaboration completed with 0 errors; simulation invocation exited cleanly.
+
+ASIC top:
+  Filelist: constraints/asic/rtl_filelist.f
+  Top: aquila_scl180_top
+  Result: PASS — compile/elaboration completed with 0 errors.
+  Hierarchy: aquila_scl180_top -> aquila_scl180_io_bind -> rls_dnn_top
+  Modules elaborated: 16
+  Foreign-cell check: no SkyWater/FPGA primitive observed in this filelist.
+
+Note: the repository launcher incorrectly combines source files with xrun -R.
+The qualification used normal compile/elaboration invocation.

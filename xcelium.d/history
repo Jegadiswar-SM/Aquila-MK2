@@ -1,0 +1,8 @@
+//
+// File created by:  xrun
+// Do not modify this file
+
+s1::(03Sep2026:16:10:07):( xrun -64bit -sv -timescale 1ns/1ps -f cadence/incisive/filelists/chip/tb_rls_dnn_top.f -top tb_rls_dnn_top -access +rwc )
+s2::(03Sep2026:16:18:49):( xrun -64bit -sv -timescale 1ns/1ps -f cadence/incisive/filelists/unit/tb_mlp_schedule.f -top tb_mlp_schedule )
+s3::(04Sep2026:15:29:14):( /home/install/XCELIUM2209/tools.lnx86/inca/bin/64bit/xrun -64bit -sv -timescale 1ns/1ps rtl/mlp_inference.v tb/tb_mlp_transaction.v -top tb_mlp_transaction -access +rwc -l /tmp/aquila_mlp_transaction.log )
+s4::(04Sep2026:15:30:07):( /home/install/XCELIUM2209/tools.lnx86/inca/bin/64bit/xrun -64bit -sv -timescale 1ns/1ps rtl/mlp_inference.v tb/tb_mlp_transaction.v -top tb_mlp_transaction -access +rwc -l /tmp/aquila_mlp_transaction_licensed.log )

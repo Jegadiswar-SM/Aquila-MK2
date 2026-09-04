@@ -1,0 +1,15 @@
+//
+// File created by:  xrun
+// Do not modify this file
+//
+-64bit
+-sv
+-timescale
+1ns/1ps
+-f
+constraints/asic/rtl_filelist.f
+-top
+aquila_scl180_top
+-elaborate
+-xmlibdirname
+cadence/xcelium/asic_elab

@@ -1,0 +1,218 @@
+Cadence Genus(TM) Synthesis Solution.
+Copyright 2022 Cadence Design Systems, Inc. All rights reserved worldwide.
+Cadence and the Cadence logo are registered trademarks and Genus is a trademark
+of Cadence Design Systems, Inc. in the United States and other countries.
+
+[15:33:48.275905] Configured Lic search path (21.01-s002): 5280@14.139.1.126
+
+Version: 21.14-s082_1, built Thu Jun 23 02:02:08 PDT 2022
+Options: -batch -files cadence/genus/qualify_genus.tcl 
+Date:    Fri Sep 04 15:33:48 2026
+Host:    ic312.vit.ac.in (x86_64 w/Linux 4.18.0-477.13.1.el8_8.x86_64) (12cores*20cpus*1physical cpu*12th Gen Intel(R) Core(TM) i7-12700 25600KB) (32334068KB)
+PID:     19537
+OS:      Red Hat Enterprise Linux release 8.8 (Ootpa)
+
+
+[15:33:50.374418] Periodic Lic check successful
+[15:33:50.374418] Feature usage summary:
+[15:33:50.374418] Genus_Synthesis
+Checking out license: Genus_Synthesis
+
+
+***********************************************************************************************************
+***********************************************************************************************************
+
+
+
+Loading tool scripts...
+Finished loading tool scripts (3 seconds elapsed).
+
+#@ Processing -files option
+@genus 1> source cadence/genus/qualify_genus.tcl
+#@ Begin verbose source ./cadence/genus/qualify_genus.tcl
+@file(qualify_genus.tcl) 5: if {![info exists ::env(AQUILA_REPO_ROOT)]} {
+  error "AQUILA_REPO_ROOT is required"
+}
+@file(qualify_genus.tcl) 8: if {![info exists ::env(AQUILA_FS120_ROOT)]} {
+  error "AQUILA_FS120_ROOT is required"
+}
+@file(qualify_genus.tcl) 11: if {![info exists ::env(AQUILA_SDC)]} {
+  error "AQUILA_SDC is required"
+}
+@file(qualify_genus.tcl) 15: set repo $::env(AQUILA_REPO_ROOT)
+@file(qualify_genus.tcl) 16: set fs120 $::env(AQUILA_FS120_ROOT)
+@file(qualify_genus.tcl) 17: set sdc $::env(AQUILA_SDC)
+@file(qualify_genus.tcl) 18: set filelist "$repo/cadence/genus/qualify_asic_filelist.f"
+@file(qualify_genus.tcl) 19: set ss_lib "$fs120/liberty/lib_flow_ss/tsl18fs120_scl_ss.lib"
+@file(qualify_genus.tcl) 21: set_db init_lib_search_path [list "$fs120/liberty/lib_flow_ss" "$fs120/verilog"]
+  Setting attribute of root '/': 'init_lib_search_path' = /home/24bvd1009/Desktop/stdcell/fs120/6M1L/liberty/lib_flow_ss /home/24bvd1009/Desktop/stdcell/fs120/6M1L/verilog
+@file(qualify_genus.tcl) 22: set_db init_hdl_search_path [list "$repo/rtl" "$repo/rtl/asic"]
+  Setting attribute of root '/': 'init_hdl_search_path' = /home/24bvd1009/bolter/Aquila-MK2/rtl /home/24bvd1009/bolter/Aquila-MK2/rtl/asic
+@file(qualify_genus.tcl) 23: read_libs $ss_lib
+
+Threads Configured:3
+
+  Message Summary for Library tsl18fs120_scl_ss.lib:
+  **************************************************
+Warning : Missing clock pin in the sequential cell. [LBR-525]
+        : Clock pin absent in sequential cell(s) 'srlab4' (File /home/24bvd1009/Desktop/stdcell/fs120/6M1L/liberty/lib_flow_ss/tsl18fs120_scl_ss.lib, Line 88858)
+        : Sequential timing checks, such as 'setup_rising' or 'hold_rising', on flop and latch cells require a clock pin. Verify that the 'clock' attribute of the clock pin is set to 'true' or that the clock pin has a 'clocked_on' attribute.
+Warning : Missing clock pin in the sequential cell. [LBR-525]
+        : Clock pin absent in sequential cell(s) 'srlab2' (File /home/24bvd1009/Desktop/stdcell/fs120/6M1L/liberty/lib_flow_ss/tsl18fs120_scl_ss.lib, Line 128076)
+Warning : Missing clock pin in the sequential cell. [LBR-525]
+        : Clock pin absent in sequential cell(s) 'srlab1' (File /home/24bvd1009/Desktop/stdcell/fs120/6M1L/liberty/lib_flow_ss/tsl18fs120_scl_ss.lib, Line 211354)
+  Missing clock pin in the sequential cell. [LBR-525]: 3
+  An unsupported construct was detected in this library. [LBR-40]: 1
+  **************************************************
+ 
+Info    : Created nominal operating condition. [LBR-412]
+        : Operating condition '_nominal_' was created for the PVT values (1.200000, 1.620000, 125.000000) in library 'tsl18fs120_scl_ss.lib'.
+        : The nominal operating condition is represented, either by the nominal PVT values specified in the library source (via nom_process,nom_voltage and nom_temperature respectively), or by the default PVT values (1.0,1.0,1.0).
+Cell 'slbhb2' is avoided.
+Warning : Library cell only has usable test_cell function. [LBR-66]
+        : Cell 'slbhb2' can be used as a regular flop/latch by tying off its test pins, or as a scan flop/latch in 'muxed_scan' style.
+        : This library has a valid test_cell function, but its regular cell function is either missing or not completely understood (for example, cell has a state_table construct). Consult your library vendor about why this cell is either missing or has an incorrectly specified cell non-test function. Comparing this cell to the other cells that do not display this Warning, can be helpful to debug the issue.
+Cell 'slbhb1' is avoided.
+Warning : Library cell only has usable test_cell function. [LBR-66]
+        : Cell 'slbhb1' can be used as a regular flop/latch by tying off its test pins, or as a scan flop/latch in 'muxed_scan' style.
+Warning : Library cell has no output pins defined. [LBR-9]
+        : Library cell 'adiode' must have an output pin.
+        : Add the missing output pin(s), then reload the library. Else the library cell will be marked as timing model i.e. unusable. Timing_model means that the cell does not have any defined function. If there is no output pin, Genus will mark library cell as unusable i.e. the attribute 'usable' will be marked to 'false' on the libcell. Therefore, the cell is not used for mapping and it will not be picked up from the library for synthesis. If you query the attribute 'unusable_reason' on the libcell; result will be: 'Library cell has no output pins.'Note: The message LBR-9 is only for the logical pins and not for the power_ground pins. Genus will depend upon the output function defined in the pin group (output pin) of the cell, to use it for mapping. The pg_pin will not have any function defined.
+Warning : Library cell has no output pins defined. [LBR-9]
+        : Library cell 'adiode' must have an output pin.
+Cell 'slbhb4' is avoided.
+Warning : Library cell only has usable test_cell function. [LBR-66]
+        : Cell 'slbhb4' can be used as a regular flop/latch by tying off its test pins, or as a scan flop/latch in 'muxed_scan' style.
+Warning : Library cell only has usable test_cell function. [LBR-66]
+        : Cell 'slnln4' can be used as a regular flop/latch by tying off its test pins, or as a scan flop/latch in 'muxed_scan' style.
+Warning : Library cell has no output pins defined. [LBR-9]
+        : Library cell 'cload1' must have an output pin.
+Warning : Library cell has no output pins defined. [LBR-9]
+        : Library cell 'cload1' must have an output pin.
+Warning : The specified pin is invalid. [LBR-146]
+        : Pin 'Z_reg' is used in data_in function, but does not exist in cell 'slnht4'
+        : Specify the pin name which is an input pin and exist in the cell.
+Warning : Library cell only has usable test_cell function. [LBR-66]
+        : Cell 'slnln2' can be used as a regular flop/latch by tying off its test pins, or as a scan flop/latch in 'muxed_scan' style.
+Warning : Library cell only has usable test_cell function. [LBR-66]
+        : Cell 'slnhn2' can be used as a regular flop/latch by tying off its test pins, or as a scan flop/latch in 'muxed_scan' style.
+Warning : Library cell only has usable test_cell function. [LBR-66]
+        : Cell 'slnln1' can be used as a regular flop/latch by tying off its test pins, or as a scan flop/latch in 'muxed_scan' style.
+Warning : Library cell only has usable test_cell function. [LBR-66]
+        : Cell 'slnhn4' can be used as a regular flop/latch by tying off its test pins, or as a scan flop/latch in 'muxed_scan' style.
+Warning : The specified pin is invalid. [LBR-146]
+        : Pin 'Z_reg' is used in data_in function, but does not exist in cell 'slnht1'
+Warning : Library cell only has usable test_cell function. [LBR-66]
+        : Cell 'slnhn1' can be used as a regular flop/latch by tying off its test pins, or as a scan flop/latch in 'muxed_scan' style.
+Warning : The specified pin is invalid. [LBR-146]
+        : Pin 'Z_reg' is used in data_in function, but does not exist in cell 'slnht2'
+@file(qualify_genus.tcl) 24: read_hdl -language sv -f $filelist
+    (* use_dsp = "yes" *) reg signed [31:0] mul_tmp;
+       |
+Warning : Unused attribute. [VLOGPT-506]
+        : Attribute 'use_dsp' in file 'rtl/aad.v' on line 71, column 8.
+    (* use_dsp = "yes" *) reg signed [31:0] mul_a1_s1;
+       |
+Warning : Unused attribute. [VLOGPT-506]
+        : Attribute 'use_dsp' in file 'rtl/cbpf_2sos.v' on line 101, column 8.
+    (* use_dsp = "yes" *) reg signed [31:0] mul_a2_s1;
+       |
+Warning : Unused attribute. [VLOGPT-506]
+        : Attribute 'use_dsp' in file 'rtl/cbpf_2sos.v' on line 102, column 8.
+    (* use_dsp = "yes" *) reg signed [31:0] mul_b0_s1;
+       |
+Warning : Unused attribute. [VLOGPT-506]
+        : Attribute 'use_dsp' in file 'rtl/cbpf_2sos.v' on line 103, column 8.
+    (* use_dsp = "yes" *) reg signed [31:0] mul_b1_s1;
+       |
+Warning : Unused attribute. [VLOGPT-506]
+        : Attribute 'use_dsp' in file 'rtl/cbpf_2sos.v' on line 104, column 8.
+    (* use_dsp = "yes" *) reg signed [31:0] mul_b2_s1;
+       |
+Warning : Unused attribute. [VLOGPT-506]
+        : Attribute 'use_dsp' in file 'rtl/cbpf_2sos.v' on line 105, column 8.
+    (* use_dsp = "yes" *) reg signed [31:0] mul_a1_s2;
+       |
+Warning : Unused attribute. [VLOGPT-506]
+        : Attribute 'use_dsp' in file 'rtl/cbpf_2sos.v' on line 187, column 8.
+    (* use_dsp = "yes" *) reg signed [31:0] mul_a2_s2;
+       |
+Warning : Unused attribute. [VLOGPT-506]
+        : Attribute 'use_dsp' in file 'rtl/cbpf_2sos.v' on line 188, column 8.
+    (* use_dsp = "yes" *) reg signed [31:0] mul_b0_s2;
+       |
+Warning : Unused attribute. [VLOGPT-506]
+        : Attribute 'use_dsp' in file 'rtl/cbpf_2sos.v' on line 189, column 8.
+    (* use_dsp = "yes" *) reg signed [31:0] mul_b1_s2;
+       |
+Warning : Unused attribute. [VLOGPT-506]
+        : Attribute 'use_dsp' in file 'rtl/cbpf_2sos.v' on line 190, column 8.
+    (* use_dsp = "yes" *) reg signed [31:0] mul_b2_s2;
+       |
+Warning : Unused attribute. [VLOGPT-506]
+        : Attribute 'use_dsp' in file 'rtl/cbpf_2sos.v' on line 191, column 8.
+    (* use_dsp = "yes" *) reg signed [31:0] mul_dx;
+       |
+Warning : Unused attribute. [VLOGPT-506]
+        : Attribute 'use_dsp' in file 'rtl/rcim.v' on line 86, column 8.
+    (* use_dsp = "yes" *) reg signed [31:0] mul_xx;
+       |
+Warning : Unused attribute. [VLOGPT-506]
+        : Attribute 'use_dsp' in file 'rtl/rcim.v' on line 87, column 8.
+    (* use_dsp = "yes" *) reg signed [31:0] mul_nr1;
+       |
+Warning : Unused attribute. [VLOGPT-506]
+        : Attribute 'use_dsp' in file 'rtl/rcim.v' on line 158, column 8.
+    (* use_dsp = "yes" *) reg signed [31:0] mul_nr2;
+       |
+Warning : Unused attribute. [VLOGPT-506]
+        : Attribute 'use_dsp' in file 'rtl/rcim.v' on line 159, column 8.
+    (* use_dsp = "yes" *) reg signed [31:0] mul_norm;
+       |
+Warning : Unused attribute. [VLOGPT-506]
+        : Attribute 'use_dsp' in file 'rtl/rcim.v' on line 187, column 8.
+    (* dont_touch = "true" *) reg ff1;
+       |
+Warning : Unused attribute. [VLOGPT-506]
+        : Attribute 'dont_touch' in file 'rtl/rst_sync.v' on line 31, column 8.
+    (* dont_touch = "true" *) reg ff2;
+       |
+Warning : Unused attribute. [VLOGPT-506]
+        : Attribute 'dont_touch' in file 'rtl/rst_sync.v' on line 32, column 8.
+(* black_box *)
+   |
+Warning : Unused attribute. [VLOGPT-506]
+        : Attribute 'black_box' in file 'rtl/asic/scl180_sram_macro_blackbox.v' on line 4, column 4.
+@file(qualify_genus.tcl) 25: elaborate aquila_scl180_top
+Warning : Libcell will be treated as a timing model. [LBR-158]
+        : Lib_pin 'bh01d1/I' has no incoming arcs.
+        : Ensure that the relevant timing arcs are defined in the Liberty model of the libcell.
+Info    : Elaborating Design. [ELAB-1]
+        : Elaborating top-level block 'aquila_scl180_top' from file 'rtl/asic/aquila_scl180_top.v'.
+Warning : Unreachable statements for case item. [CDFG-472]
+        : Case item 'default' in module 'rcim_rcim_lut_read_rcim_WINDOW_32_FAULT_PERSIST_128_LUTRAM_DEPTH_16' in file 'rtl/rcim.v' on line 125.
+Warning : Unreachable statements for case item. [CDFG-472]
+        : Case item 'default' in module 'rls_engine_STAGE1_NR1.NR_STAGE1.nr_lut_read_rls_engine_N_8_W_16_LAMBDA_Q15_16'h7f00_ACC_W_40_FRAC_15_TWO_Q214_16'sh7fff_Y_HAT_MAX_ACC_40'sh003fff8000_Y_HAT_MIN_ACC_40'shffc0000000' in file 'rtl/rls_engine.v' on line 75.
+Warning : Detected a logic abstract. [CDFG-331]
+        : Logic abstract 'spram_8192_32' in file 'rtl/asic/scl180_sram_macro_blackbox.v' on line 5.
+        : A logic abstract is an unresolved reference with defined port names and directions. It is inferred from an empty Verilog or VHDL design, or when the 'black_box' pragma or 'blackbox' hdl_arch attribute is specified. Use 'set_db init_blackbox_for_undefined false' (in CUI mode) or 'set_attribute init_blackbox_for_undefined false /' (in legacy mode) to treat an empty module as a defined module.
+Error   : All assignments within a conditional statement should be either all blocking or all non-blocking. [CDFG-463] [elaborate]
+        : Assignment to 'h1[0]' in file 'rtl/mlp_inference.v' on line 213.
+        : The following example shows an unallowed mix of blocking and non-blocking assignments.
+    if (in)
+        out = data1;
+    else
+        out <= data2;
+Info    : Unable to elaborate the design. [ELAB-4]
+        : Module 'aquila_scl180_top' contains errors and cannot be elaborated.
+UM:   flow.cputime  flow.realtime  timing.setup.tns  timing.setup.wns  snapshot
+UM:*                                                                   elaborate
+#@ End verbose source ./cadence/genus/qualify_genus.tcl
+1
+Encountered problems processing file: cadence/genus/qualify_genus.tcl
+
+Lic Summary:
+[15:33:58.189712] Cdslmd servers: cadence-c2s
+[15:33:58.189713] Feature usage summary:
+[15:33:58.189714] Genus_Synthesis
+

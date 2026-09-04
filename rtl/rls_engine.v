@@ -33,6 +33,9 @@ module rls_engine #(
     output wire signed [15:0] nr_x2_debug  // NR reciprocal (Q2.14), for test observation
 );
 
+    // Declare before the continuous assignment for compatibility with older
+    // Incisive ncvlog parsers.
+    reg signed [15:0] nr_x2;
     assign nr_x2_debug = nr_x2;
 
     localparam ACC_W = 40;
@@ -109,13 +112,36 @@ module rls_engine #(
     // NR pipeline registers
     reg signed [15:0] nr_denom_p1;    // Q1.15 denom delayed to NR stage 1
     reg signed [15:0] nr_x1;          // Q2.14 format, range [-2.0,+1.99994)
-    reg signed [15:0] nr_x2;          // Q2.14 format, range [-2.0,+1.99994), final reciprocal
     reg               nr_p1_valid;
     reg               nr_p2_valid;
 
     reg signed [W-1:0] x_dly_p1 [0:N-1]; // Delayed x_dly for weight update
     reg signed [W-1:0] e_reg_p1;          // Delayed e_reg for weight update
     reg signed [W-1:0] d_pipe_p1;         // Delayed d_pipe
+
+    // The original implementation updated all eight taps in parallel.  That
+    // created eight leakage multipliers and sixteen gain/error multipliers in
+    // one synthesis cone.  Keep one scheduled tap datapath instead.  The
+    // scalar NR and dot-product semantics remain unchanged; only the
+    // independent per-tap updates are serialized.
+    reg                    rls_busy;
+    reg                    update_busy;
+    reg             [2:0]  update_idx;
+    reg signed      [31:0] update_p_over_denom;
+    reg signed      [15:0] update_err;
+    // Keep the estimate/error pipeline's original sample cadence.  At the
+    // intended 8 kHz service interval the serialized update lane is idle
+    // before the next sample; short-cadence diagnostic pulses may still
+    // update y_hat without corrupting the protected tap-update schedule.
+    wire                   sample_accept = sample_en;
+    wire                   update_done = update_busy && (update_idx == 3'd7);
+    wire signed     [31:0] update_w_leaked = $signed(leak_factor) * $signed(w[update_idx]);
+    wire signed     [31:0] update_ke1 =
+        ($signed(update_p_over_denom[15:0]) * $signed(x_dly_p1[update_idx])) >>> FRAC;
+    wire signed     [31:0] update_ke = (update_ke1 * $signed(update_err)) >>> FRAC;
+    wire signed     [31:0] update_w_sum =
+        $signed({{16{update_w_leaked[30]}}, update_w_leaked[30:15]}) +
+        $signed({{16{update_ke[15]}}, update_ke[15:0]});
 
     // =========================================================================
     // STAGE0: Dot product + error computation
@@ -128,6 +154,7 @@ module rls_engine #(
             e_reg    <= 16'sd0;
             d_pipe   <= 16'sd0;
             s1_valid <= 1'b0;
+            rls_busy <= 1'b0;
             for (integer i_s0_reset = 0; i_s0_reset < N; i_s0_reset = i_s0_reset + 1)
                 x_dly[i_s0_reset] <= 16'sd0;
         end else if (srst) begin
@@ -136,11 +163,15 @@ module rls_engine #(
             e_reg    <= 16'sd0;
             d_pipe   <= 16'sd0;
             s1_valid <= 1'b0;
+            rls_busy <= 1'b0;
             for (integer i_s0_srst = 0; i_s0_srst < N; i_s0_srst = i_s0_srst + 1)
                 x_dly[i_s0_srst] <= 16'sd0;
         end else begin
-            s1_valid <= sample_en;
-            if (sample_en) begin
+            if (update_done)
+                rls_busy <= 1'b0;
+            s1_valid <= sample_accept;
+            if (sample_accept) begin
+                rls_busy <= 1'b1;
                 for (integer i_s0_shift = N-1; i_s0_shift > 0; i_s0_shift = i_s0_shift - 1)
                     x_dly[i_s0_shift] <= x_dly[i_s0_shift-1];
                 x_dly[0] <= x_in;
@@ -266,26 +297,47 @@ module rls_engine #(
             p_scalar    <= 16'sh0800;
             nr_x2       <= 16'sd0;
             nr_p2_valid <= 1'b0;
+            update_busy <= 1'b0;
+            update_idx  <= 3'd0;
+            update_p_over_denom <= 32'sd0;
+            update_err  <= 16'sd0;
             for (integer i_s2_reset = 0; i_s2_reset < N; i_s2_reset = i_s2_reset + 1)
                 w[i_s2_reset] <= 16'sd0;
         end else if (srst) begin
             nr_p2_valid <= 1'b0;
+            update_busy <= 1'b0;
+            update_idx  <= 3'd0;
+            update_p_over_denom <= 32'sd0;
+            update_err  <= 16'sd0;
             // w[] and p_scalar preserved intentionally
         end else begin
-            nr_p2_valid <= nr_p1_valid;
-            if (nr_p1_valid) begin : NR_STAGE2
+            nr_p2_valid <= 1'b0;
+            if (update_busy) begin
+                // One physical tap-update lane is reused for all eight taps.
+                if (update_w_sum > 32'sh00007FFF)
+                    w[update_idx] <= 16'sh7FFF;
+                else if (update_w_sum < -32'sh00008000)
+                    w[update_idx] <= 16'sh8000;
+                else
+                    w[update_idx] <= update_w_sum[15:0];
+
+                if (update_idx == 3'd7) begin
+                    update_busy <= 1'b0;
+                    nr_p2_valid <= 1'b1;
+                end else begin
+                    update_idx <= update_idx + 3'd1;
+                end
+            end else if (nr_p1_valid) begin : NR_STAGE2
                 /* verilator lint_off UNUSEDSIGNAL */
                 reg signed [31:0] Dx1;
                 /* verilator lint_on UNUSEDSIGNAL */
                 reg signed [31:0] p_over_denom;
-                reg signed [31:0] ke;
                 reg signed [15:0] Dx1_q214;
                 reg signed [15:0] residual2;
                 reg signed [31:0] x2_product;
                 /* verilator lint_off UNUSEDSIGNAL */
                 reg signed [31:0] x2_shift;
                 /* verilator lint_on UNUSEDSIGNAL */
-                integer j;
 
                 // NR stage 2: x2 = x1 * (2 - D*x1), all x/residual terms Q2.14.
                 Dx1 = $signed({1'b0, nr_denom_p1}) * $signed(nr_x1);
@@ -299,33 +351,12 @@ module rls_engine #(
                 p_over_denom = $signed(p_scalar) * $signed(nr_x2);
                 p_over_denom = p_over_denom >>> 14;
 
-                // E2: Leakage-regularized weight update
-                // w(n) = LEAK * w(n-1) + k(n) * e_weighted(n)
-                for (j = 0; j < N; j = j + 1) begin : WEIGHT_UPDATE_LOOP
-                    /* verilator lint_off UNUSEDSIGNAL */
-                    reg signed [31:0] w_leaked;
-                    /* verilator lint_on UNUSEDSIGNAL */
-                    reg signed [31:0] w_sum;
-                    reg signed [15:0] update_err;
-
-                    // Use e_weighted if non-zero for FWES, else e_reg_p1
-                    update_err = (e_weighted != 16'd0) ? e_weighted : e_reg_p1;
-
-                    // Leakage: w_leaked = leak_factor * w[j] >>> 15
-                    w_leaked = ($signed(leak_factor) * $signed(w[j]));
-
-                    ke = ($signed(p_over_denom[15:0]) * $signed(x_dly_p1[j])) >>> FRAC;
-                    ke = (ke * $signed(update_err)) >>> FRAC;
-                    w_sum = $signed({{16{w_leaked[30]}}, w_leaked[30:15]}) +
-                            $signed({{16{ke[15]}}, ke[15:0]});
-
-                    if (w_sum > 32'sh00007FFF)
-                        w[j] <= 16'sh7FFF;
-                    else if (w_sum < -32'sh00008000)
-                        w[j] <= 16'sh8000;
-                    else
-                        w[j] <= w_sum[15:0];
-                end
+                // E2: Capture the common terms and serialize the exact same
+                // per-tap update over the following eight cycles.
+                update_p_over_denom <= p_over_denom;
+                update_err <= (e_weighted != 16'd0) ? e_weighted : e_reg_p1;
+                update_idx <= 3'd0;
+                update_busy <= 1'b1;
 
                 begin : P_UPDATE
                     reg signed [31:0] p_new;

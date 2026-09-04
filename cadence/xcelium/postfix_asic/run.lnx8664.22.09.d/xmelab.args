@@ -1,0 +1,24 @@
+//
+// File created by:  xrun
+// Do not modify this file
+//
+-amsdlibdir
+cadence/xcelium/postfix_asic/AMSD
+-timescale
+1ns/1ps
+-XMLIBDIRNAME
+cadence/xcelium/postfix_asic
+-no_analogsolver
+-MESSAGES
+aquila_scl180_top
+-XLMODE
+cadence/xcelium/postfix_asic/run.lnx8664.22.09.d
+-RUNMODE
+-CDSLIB
+cadence/xcelium/postfix_asic/run.lnx8664.22.09.d/cds.lib
+-HDLVAR
+cadence/xcelium/postfix_asic/run.lnx8664.22.09.d/hdl.var
+-WORK
+worklib
+-IRUNHASTOP
+-HASXLMODE

@@ -1,0 +1,15 @@
+//
+// File created by:  xrun
+// Do not modify this file
+//
+-64bit
+-sv
+-timescale
+1ns/1ps
+-f
+cadence/incisive/filelists/unit/tb_mlp_schedule.f
+-top
+tb_mlp_schedule
+-elaborate
+-xmlibdirname
+cadence/xcelium/mlp_schedule

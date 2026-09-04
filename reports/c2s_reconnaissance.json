@@ -1,0 +1,67 @@
+{
+  "review_date": "2026-09-03",
+  "mode": "read-only reconnaissance",
+  "environment": {
+    "hostname": "ic312.vit.ac.in",
+    "os_kernel": "Linux 4.18.0-477.13.1.el8_8.x86_64",
+    "architecture": "x86_64",
+    "shell": "/bin/bash",
+    "cpu_count_observed": 20,
+    "memory_observed": "30GiB total",
+    "secrets_collected": false
+  },
+  "pdk": {
+    "root": "/home/24bvd1009/Desktop/pdk/cdns/sclpdk_v3",
+    "technology": "ts18scl",
+    "requested_version": "v2.0",
+    "requested_technology_root_status": "MISSING",
+    "observed_payload_root": "HOTCODE",
+    "revision_marker": "ts18scl rev 2.0",
+    "kit_marker": "ts18scl_20200114_2.0",
+    "lfs_pointer_signatures_found_in_hotcode": false,
+    "file_counts": {
+      "all": 123840,
+      "lib": 102,
+      "db": 58,
+      "tf": 54,
+      "v": 2,
+      "sv": 0,
+      "lef": 0,
+      "gds_gds2": 0,
+      "cdl": 0,
+      "sp_scs": 0
+    },
+    "digital_implementation_bundle": {
+      "hotcode": "MISSING",
+      "external_c2s_staging": "REAL_PAYLOAD_BUT_PROVENANCE_UNCONFIRMED",
+      "standard_cell_root": "/home/24bvd1009/Desktop/stdcell/fs120/6M1L"
+    }
+  },
+  "sram": {
+    "candidates_found": 2,
+    "status": "PROVISIONAL_CANDIDATES_FOUND",
+    "preferred_candidate": "spram_8192_32",
+    "preferred_path": "/home/24bvd1009/pdk-backup-staging/scl180/memories/spram/6M1L/SP_SRAM_spram_8192_32",
+    "logical_organization": "8 x 8192x32 = 8192x256",
+    "binding_status": "BLOCKED_PENDING_GDS_PROVENANCE_SINGLE_PORT_ADAPTER_AND_MBIST_CONFIRMATION"
+  },
+  "io": {
+    "verified_scl180_pad_bundle": false,
+    "candidate_families": ["cio150/6M1L", "cio250/6M1L", "pio520/6M1L"],
+    "status": "CANDIDATE_PHYSICAL_PAYLOAD_FOUND_DIGITAL_MODEL_AND_PACKAGE_SCOPE_BLOCKED"
+  },
+  "dft": {"modus_installation_found": true, "mbist_metadata_found": false, "license_status": "UNKNOWN", "status": "BLOCKED"},
+  "tools": {
+    "xrun": "/home/install/XCELIUM2209 (not PATH)", "genus": "/home/install/GENUS211/bin/genus (not PATH)", "innovus": "/home/install/INNOVUS211/bin/innovus", "tempus": "/home/install/SSV221/bin/tempus",
+    "conformal": "/home/install/CONFRML211", "modus": "/home/install/MODUS221", "quantus": "/home/install/QUANTUS212/bin/quantus", "voltus": "UNKNOWN",
+    "pvs": "/home/install/PVS222 installed; /usr/sbin/pvs is Linux lvm",
+    "license_status": "UNKNOWN"
+  },
+  "physical_verification": {
+    "calibre_runsets": "PRESENT_UNEXECUTED",
+    "rc_xrc_families": "PRESENT_UNEXECUTED",
+    "layout_payload": "MISSING"
+  },
+  "aquila_genus_decision": "CONDITIONAL_GO_FOR_CONTROLLED_QUALIFICATION; CURRENT_SHELL_NO_GO",
+  "overall_status": "B. ASIC FRONT-END ARCHITECTURE CLOSED; PDK/CADENCE EXECUTION BLOCKED"
+}

@@ -1,0 +1,27 @@
+Aquila C2S execution checkpoint — Genus
+Date: 2026-09-03
+Setup: source /home/install/cshrc
+Executable: /home/install/GENUS211/bin/genus
+Observed version: 21.14-s082_1
+License: Genus_Synthesis checkout successful; periodic license check successful.
+
+Run 1, original functional memory representation:
+  Result: stopped after >4 minutes at elaborate, approximately 4.2 GB RSS.
+  Evidence: /tmp/aquila_genus_qualify.log and genus.log.
+  Finding: literal reg [255:0] mem [0:8191] is not scalable for this flow.
+
+Run 2, ASIC binding qualification:
+  Filelist: cadence/genus/qualify_asic_filelist.f
+  Top: aquila_scl180_top
+  Library: /home/24bvd1009/Desktop/stdcell/fs120/6M1L/liberty/lib_flow_ss/tsl18fs120_scl_ss.lib
+  SRAM boundary: eight spram_8192_32 instances, black-box declaration.
+  Constraint qualification: AQUILA_CLOCK_PERIOD_NS=20, AQUILA_IO_TIMING_APPROVED=1
+  Result: FAIL — Genus elaboration error CDFG-463.
+  Exact blocker: rtl/mlp_inference.v:188, blocking assignments to h1[]/h3[]/h2[]
+  occur in a conditional containing nonblocking assignments.
+  Genus message: “All assignments within a conditional statement should be either
+  all blocking or all non-blocking.”
+
+Warnings also observed in the FS120 Liberty (missing clock pins in srlab cells,
+test-only cells, invalid/unsupported library constructs) and unused FPGA
+use_dsp attributes. These are not silently waived.

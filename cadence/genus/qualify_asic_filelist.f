@@ -1,0 +1,16 @@
+rtl/aad.v
+rtl/affhc.v
+rtl/cbpf_2sos.v
+rtl/fwes.v
+rtl/lat_prof.v
+rtl/mlp_inference.v
+rtl/asic/mlp_weight_sram_wrapper_scl180.v
+rtl/plwd.v
+rtl/poly_decim.v
+rtl/ptdl_8stage.v
+rtl/rcim.v
+rtl/rls_dnn_top.v
+rtl/rls_engine.v
+rtl/rst_sync.v
+rtl/asic/scl180_sram_macro_blackbox.v
+rtl/asic/aquila_scl180_top.v

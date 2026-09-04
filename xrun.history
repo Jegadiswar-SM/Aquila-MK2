@@ -1,0 +1,1 @@
+s1(03Sep2026:16:43:19):  xrun -64bit -sv -timescale 1ns/1ps -f constraints/asic/rtl_filelist.f -top aquila_scl180_top -elaborate -xmlibdirname cadence/xcelium/postfix_asic 

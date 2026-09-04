@@ -1,0 +1,19 @@
+//
+// File created by:  xrun
+// Do not modify this file
+//
+/home/24bvd1009/bolter/Aquila-MK2/rtl/aad.v
+/home/24bvd1009/bolter/Aquila-MK2/rtl/affhc.v
+/home/24bvd1009/bolter/Aquila-MK2/rtl/cbpf_2sos.v
+/home/24bvd1009/bolter/Aquila-MK2/rtl/fwes.v
+/home/24bvd1009/bolter/Aquila-MK2/rtl/lat_prof.v
+/home/24bvd1009/bolter/Aquila-MK2/rtl/mlp_inference.v
+/home/24bvd1009/bolter/Aquila-MK2/rtl/mlp_weight_sram_wrapper.v
+/home/24bvd1009/bolter/Aquila-MK2/rtl/plwd.v
+/home/24bvd1009/bolter/Aquila-MK2/rtl/poly_decim.v
+/home/24bvd1009/bolter/Aquila-MK2/rtl/ptdl_8stage.v
+/home/24bvd1009/bolter/Aquila-MK2/rtl/rcim.v
+/home/24bvd1009/bolter/Aquila-MK2/rtl/rls_dnn_top.v
+/home/24bvd1009/bolter/Aquila-MK2/rtl/rls_engine.v
+/home/24bvd1009/bolter/Aquila-MK2/rtl/rst_sync.v
+/home/24bvd1009/bolter/Aquila-MK2/rtl/asic/aquila_scl180_top.v

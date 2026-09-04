@@ -1,0 +1,14 @@
+Aquila C2S execution checkpoint — Genus synthesis
+Date: 2026-09-03
+Library: FS120 6M1L SS Liberty
+Clock qualification: 10 ns (100 MHz initial target)
+
+Attempt 1: default synthesis — FAIL.
+  `Bailing out due to instance count blowup. Instance count = 501673 max limit = 500000`.
+
+Attempt 2: `syn_generic_effort low`, `syn_map_effort low` — bounded run timed
+out before a netlist was emitted. The log showed repeated MLP datapath/CSA
+optimization and no mapped output.
+
+No area, timing, power, or mapped-cell metric is claimed. No synthesized
+netlist exists. Innovus/Conformal/DFT are therefore not started.

@@ -1,0 +1,12 @@
+Aquila C2S execution checkpoint — SRAM binding
+Date: 2026-09-03
+Selected qualification architecture: eight `spram_8192_32` instances.
+Candidate root: /home/24bvd1009/pdk-backup-staging/scl180/memories/spram/6M1L/SP_SRAM_spram_8192_32
+
+Genus evidence: `spram_8192_32` was recognized as a logic abstract in the
+ASIC-bound filelist; the behavioral 8192x256 array was absent from this run.
+The design therefore did not elaborate into the giant memory register array.
+
+Binding status: qualification-only. The macro is single-port/full-word-write;
+the 16-bit logical programming path requires RMW and an approved no-overlap
+or arbitration contract before equivalence/physical binding.

@@ -1,0 +1,25 @@
+//
+// File created by:  xrun
+// Do not modify this file
+//
++incdir+rtl
+-amsdlibdir
+cadence/xcelium/postfix_schedule/AMSD
+-timescale
+1ns/1ps
+-XMLIBDIRNAME
+cadence/xcelium/postfix_schedule
+-no_analogsolver
+-MESSAGES
+tb_mlp_schedule
+-XLMODE
+cadence/xcelium/postfix_schedule/run.lnx8664.22.09.d
+-RUNMODE
+-CDSLIB
+cadence/xcelium/postfix_schedule/run.lnx8664.22.09.d/cds.lib
+-HDLVAR
+cadence/xcelium/postfix_schedule/run.lnx8664.22.09.d/hdl.var
+-WORK
+worklib
+-IRUNHASTOP
+-HASXLMODE

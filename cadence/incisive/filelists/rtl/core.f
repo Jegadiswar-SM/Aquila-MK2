@@ -1,0 +1,15 @@
++incdir+rtl
+rtl/rst_sync.v
+rtl/aad.v
+rtl/affhc.v
+rtl/cbpf_2sos.v
+rtl/fwes.v
+rtl/lat_prof.v
+rtl/mlp_inference.v
+rtl/mlp_weight_sram_wrapper.v
+rtl/plwd.v
+rtl/poly_decim.v
+rtl/ptdl_8stage.v
+rtl/rcim.v
+rtl/rls_engine.v
+rtl/rls_dnn_top.v

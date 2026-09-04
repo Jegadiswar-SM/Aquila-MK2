@@ -25,6 +25,10 @@ module mlp_inference (
 
     input  wire [127:0] features_in,      // 8 x Q1.15 packed from PTDL
 
+    input  wire         bias_load_en,
+    input  wire [9:0]   bias_load_addr,
+    input  wire [15:0]  bias_load_data,
+
     // Weight SRAM Interface (256-bit read port)
     output reg          ren,
     output reg  [12:0]  raddr,
@@ -62,9 +66,10 @@ module mlp_inference (
     // Local Activation Storage (Registers for intermediate layer outputs)
     // =========================================================================
     reg signed [15:0] feat_reg [0:7];
-    reg signed [15:0] h1 [0:127];
-    reg signed [15:0] h2 [0:383];
-    reg signed [15:0] h3 [0:127];
+    // Two 16-bank x 24-entry x 16-bit ping-pong activation buffers.
+    reg signed [15:0] act_buf0 [0:15][0:23];
+    reg signed [15:0] act_buf1 [0:15][0:23];
+    reg signed [15:0] bias_mem [0:640];
 
     // =========================================================================
     // FSM States
@@ -116,6 +121,37 @@ module mlp_inference (
     reg signed [31:0] prod  [0:15];
     wire signed [39:0] prod_ext [0:15];
 
+    // Keep the existing one-row/cycle streaming schedule, but make the
+    // reduction topology explicit.  This prevents Genus from constructing a
+    // giant associative CSA expression around the 40-bit accumulator.
+    wire signed [39:0] mac_pair [0:7];
+    wire signed [39:0] mac_quad [0:3];
+    wire signed [39:0] mac_oct [0:1];
+    wire signed [39:0] mac_sum;
+    assign mac_pair[0] = prod_ext[0] + prod_ext[1];
+    assign mac_pair[1] = prod_ext[2] + prod_ext[3];
+    assign mac_pair[2] = prod_ext[4] + prod_ext[5];
+    assign mac_pair[3] = prod_ext[6] + prod_ext[7];
+    assign mac_pair[4] = prod_ext[8] + prod_ext[9];
+    assign mac_pair[5] = prod_ext[10] + prod_ext[11];
+    assign mac_pair[6] = prod_ext[12] + prod_ext[13];
+    assign mac_pair[7] = prod_ext[14] + prod_ext[15];
+    assign mac_quad[0] = mac_pair[0] + mac_pair[1];
+    assign mac_quad[1] = mac_pair[2] + mac_pair[3];
+    assign mac_quad[2] = mac_pair[4] + mac_pair[5];
+    assign mac_quad[3] = mac_pair[6] + mac_pair[7];
+    assign mac_oct[0] = mac_quad[0] + mac_quad[1];
+    assign mac_oct[1] = mac_quad[2] + mac_quad[3];
+    assign mac_sum = mac_oct[0] + mac_oct[1];
+
+    wire [9:0] bias_index = (current_layer==0) ? {1'b0,node_cnt} :
+                             (current_layer==1) ? 10'd128 + node_cnt :
+                             (current_layer==2) ? 10'd512 + node_cnt : 10'd640;
+    wire signed [39:0] final_acc_wire = accumulator +
+        {{8{bias_reg[15]}}, bias_reg, 16'b0};
+    wire signed [15:0] activated_val_wire =
+        (current_layer == 3'd3) ? 16'sd0 : qaa_tanh(final_acc_wire[30:15]);
+
     genvar p;
     generate
         for (p = 0; p < 16; p = p + 1) begin : PROD_EXTEND
@@ -153,11 +189,11 @@ module mlp_inference (
                 else
                     act_val[idx_act] = 16'sd0;
             end else if (current_layer == 3'd1) begin
-                act_val[idx_act] = h1[activation_index_128(step_cnt[2:0], idx_act[3:0])];
+                act_val[idx_act] = act_buf1[idx_act][step_cnt[2:0]];
             end else if (current_layer == 3'd2) begin
-                act_val[idx_act] = h2[activation_index_384(step_cnt[4:0], idx_act[3:0])];
+                act_val[idx_act] = act_buf0[idx_act][step_cnt[4:0]];
             end else begin
-                act_val[idx_act] = h3[activation_index_128(step_cnt[2:0], idx_act[3:0])];
+                act_val[idx_act] = act_buf1[idx_act][step_cnt[2:0]];
             end
         end
     end
@@ -179,12 +215,14 @@ module mlp_inference (
             valid_out     <= 1'b0;
             for (integer idx_feat_reset = 0; idx_feat_reset < 8; idx_feat_reset = idx_feat_reset + 1)
                 feat_reg[idx_feat_reset] <= 16'sd0;
-            for (integer idx_hidden_reset = 0; idx_hidden_reset < 128; idx_hidden_reset = idx_hidden_reset + 1) begin
-                h1[idx_hidden_reset] = 16'sd0;
-                h3[idx_hidden_reset] = 16'sd0;
-            end
-            for (integer idx_h2_reset = 0; idx_h2_reset < 384; idx_h2_reset = idx_h2_reset + 1)
-                h2[idx_h2_reset] = 16'sd0;
+            for (integer b0_reset = 0; b0_reset < 16; b0_reset = b0_reset + 1)
+                for (integer e0_reset = 0; e0_reset < 24; e0_reset = e0_reset + 1)
+                    act_buf0[b0_reset][e0_reset] <= 16'sd0;
+            for (integer b1_reset = 0; b1_reset < 16; b1_reset = b1_reset + 1)
+                for (integer e1_reset = 0; e1_reset < 24; e1_reset = e1_reset + 1)
+                    act_buf1[b1_reset][e1_reset] <= 16'sd0;
+            for (integer bias_reset = 0; bias_reset < 641; bias_reset = bias_reset + 1)
+                bias_mem[bias_reset] <= 16'sd0;
         end else if (srst) begin
             state         <= STATE_IDLE;
             current_layer <= 3'd0;
@@ -198,14 +236,18 @@ module mlp_inference (
             valid_out     <= 1'b0;
             for (integer idx_feat_srst = 0; idx_feat_srst < 8; idx_feat_srst = idx_feat_srst + 1)
                 feat_reg[idx_feat_srst] <= 16'sd0;
-            for (integer idx_hidden_srst = 0; idx_hidden_srst < 128; idx_hidden_srst = idx_hidden_srst + 1) begin
-                h1[idx_hidden_srst] = 16'sd0;
-                h3[idx_hidden_srst] = 16'sd0;
-            end
-            for (integer idx_h2_srst = 0; idx_h2_srst < 384; idx_h2_srst = idx_h2_srst + 1)
-                h2[idx_h2_srst] = 16'sd0;
+            for (integer b0_srst = 0; b0_srst < 16; b0_srst = b0_srst + 1)
+                for (integer e0_srst = 0; e0_srst < 24; e0_srst = e0_srst + 1)
+                    act_buf0[b0_srst][e0_srst] <= 16'sd0;
+            for (integer b1_srst = 0; b1_srst < 16; b1_srst = b1_srst + 1)
+                for (integer e1_srst = 0; e1_srst < 24; e1_srst = e1_srst + 1)
+                    act_buf1[b1_srst][e1_srst] <= 16'sd0;
+            for (integer bias_srst = 0; bias_srst < 641; bias_srst = bias_srst + 1)
+                bias_mem[bias_srst] <= 16'sd0;
         end else begin
             valid_out <= 1'b0;
+            if (bias_load_en)
+                bias_mem[bias_load_addr] <= bias_load_data;
 
             case (state)
                 STATE_IDLE: begin
@@ -221,15 +263,10 @@ module mlp_inference (
                 end
 
                 STATE_READ_BIAS: begin
-                    ren <= 1'b1;
-                    case (current_layer)
-                        3'd0: raddr <= 13'd64   + (node_cnt_ext >> 4); // B1
-                        3'd1: raddr <= 13'd3144 + (node_cnt_ext >> 4); // B2
-                        3'd2: raddr <= 13'd6240 + (node_cnt_ext >> 4); // B3
-                        3'd3: raddr <= 13'd6256;                   // B4
-                        default: raddr <= 13'd0;
-                    endcase
-                    state <= STATE_WAIT_BIAS;
+                    bias_reg <= bias_mem[bias_index];
+                    accumulator <= 40'sd0;
+                    step_cnt <= 6'd0;
+                    state <= STATE_COMPUTE;
                 end
 
                 STATE_WAIT_BIAS: begin
@@ -309,38 +346,28 @@ module mlp_inference (
 
                     // Accumulate multiplier products as they arrive through the pipeline
                     if (rvalid_dly[2]) begin
-                        accumulator <= accumulator +
-                                       prod_ext[0]  + prod_ext[1]  + prod_ext[2]  + prod_ext[3]  +
-                                       prod_ext[4]  + prod_ext[5]  + prod_ext[6]  + prod_ext[7]  +
-                                       prod_ext[8]  + prod_ext[9]  + prod_ext[10] + prod_ext[11] +
-                                       prod_ext[12] + prod_ext[13] + prod_ext[14] + prod_ext[15];
+                        accumulator <= accumulator + mac_sum;
                     end
 
                     // Once all data has cleared the pipeline
                     if (rvalid_dly == 3'd0) begin
                         // Final step: add bias, apply tanh/saturation
-                        reg signed [39:0] final_acc;
-                        reg signed [15:0] activated_val;
-
-                        final_acc     = accumulator + {{8{bias_reg[15]}}, bias_reg, 16'b0};
-                        activated_val = (current_layer == 3'd3) ? 16'sd0 : qaa_tanh(final_acc[30:15]);
-
                         case (current_layer)
-                            3'd0: h1[node_cnt[6:0]] <= activated_val;
-                            3'd1: h2[node_cnt] <= activated_val;
-                            3'd2: h3[node_cnt[6:0]] <= activated_val;
+                            3'd0: act_buf1[node_cnt[3:0]][node_cnt[8:4]] <= activated_val_wire;
+                            3'd1: act_buf0[node_cnt[3:0]][node_cnt[8:4]] <= activated_val_wire;
+                            3'd2: act_buf1[node_cnt[3:0]][node_cnt[8:4]] <= activated_val_wire;
                             3'd3: begin
                                 // Compare the signed accumulator against the
                                 // exact Q1.15 output limits.  A part-select is
                                 // unsigned in Verilog; comparing it directly
                                 // against a negative literal made zero
                                 // incorrectly satisfy the negative branch.
-                                if (final_acc > 40'sh003FFF8000)
+                                if (final_acc_wire > 40'sh003FFF8000)
                                     y_out <= 16'sh7FFF;
-                                else if (final_acc < 40'shFFC0000000)
+                                else if (final_acc_wire < 40'shFFC0000000)
                                     y_out <= 16'sh8000;
                                 else
-                                    y_out <= final_acc[30:15];
+                                    y_out <= final_acc_wire[30:15];
                             end
                             default: begin
                                 y_out <= 16'sd0;

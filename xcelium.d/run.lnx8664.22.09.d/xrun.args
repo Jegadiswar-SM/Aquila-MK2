@@ -1,0 +1,16 @@
+//
+// File created by:  xrun
+// Do not modify this file
+//
+-64bit
+-sv
+-timescale
+1ns/1ps
+rtl/mlp_inference.v
+tb/tb_mlp_transaction.v
+-top
+tb_mlp_transaction
+-access
++rwc
+-l
+/tmp/aquila_mlp_transaction.log

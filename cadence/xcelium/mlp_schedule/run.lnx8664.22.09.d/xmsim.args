@@ -1,0 +1,24 @@
+//
+// File created by:  xrun
+// Do not modify this file
+//
++incdir+rtl
+-amsdlibdir
+cadence/xcelium/mlp_schedule/AMSD
+-MESSAGES
++EMGRLOG
+xrun.log
+-XLSTIME
+1788432557
+-XLKEEP
+-XLMODE
+cadence/xcelium/mlp_schedule/run.lnx8664.22.09.d
+-RUNMODE
+-CDSLIB
+cadence/xcelium/mlp_schedule/run.lnx8664.22.09.d/cds.lib
+-HDLVAR
+cadence/xcelium/mlp_schedule/run.lnx8664.22.09.d/hdl.var
+-XLNAME
+xrun
+-XLVERSION
+"TOOL:	xrun(64)	22.09-s003"

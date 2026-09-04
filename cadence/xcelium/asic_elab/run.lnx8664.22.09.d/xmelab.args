@@ -1,0 +1,24 @@
+//
+// File created by:  xrun
+// Do not modify this file
+//
+-amsdlibdir
+cadence/xcelium/asic_elab/AMSD
+-timescale
+1ns/1ps
+-XMLIBDIRNAME
+cadence/xcelium/asic_elab
+-no_analogsolver
+-MESSAGES
+aquila_scl180_top
+-XLMODE
+cadence/xcelium/asic_elab/run.lnx8664.22.09.d
+-RUNMODE
+-CDSLIB
+cadence/xcelium/asic_elab/run.lnx8664.22.09.d/cds.lib
+-HDLVAR
+cadence/xcelium/asic_elab/run.lnx8664.22.09.d/hdl.var
+-WORK
+worklib
+-IRUNHASTOP
+-HASXLMODE

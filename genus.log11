@@ -1,0 +1,69 @@
+Cadence Genus(TM) Synthesis Solution.
+Copyright 2022 Cadence Design Systems, Inc. All rights reserved worldwide.
+Cadence and the Cadence logo are registered trademarks and Genus is a trademark
+of Cadence Design Systems, Inc. in the United States and other countries.
+
+[15:33:22.275841] Configured Lic search path (21.01-s002): 5280@14.139.1.126
+
+Version: 21.14-s082_1, built Thu Jun 23 02:02:08 PDT 2022
+Options: -batch -files cadence/genus/qualify_genus.tcl 
+Date:    Fri Sep 04 15:33:22 2026
+Host:    ic312.vit.ac.in (x86_64 w/Linux 4.18.0-477.13.1.el8_8.x86_64) (12cores*20cpus*1physical cpu*12th Gen Intel(R) Core(TM) i7-12700 25600KB) (32334068KB)
+PID:     19170
+OS:      Red Hat Enterprise Linux release 8.8 (Ootpa)
+
+
+[15:33:24.202729] Periodic Lic check successful
+[15:33:24.202737] Feature usage summary:
+[15:33:24.202737] Genus_Synthesis
+Checking out license: Genus_Synthesis
+
+
+***********************************************************************************************************
+***********************************************************************************************************
+
+
+
+Loading tool scripts...
+Finished loading tool scripts (4 seconds elapsed).
+
+#@ Processing -files option
+@genus 1> source cadence/genus/qualify_genus.tcl
+#@ Begin verbose source ./cadence/genus/qualify_genus.tcl
+@file(qualify_genus.tcl) 5: if {![info exists ::env(AQUILA_REPO_ROOT)]} {
+  error "AQUILA_REPO_ROOT is required"
+}
+@file(qualify_genus.tcl) 8: if {![info exists ::env(AQUILA_FS120_ROOT)]} {
+  error "AQUILA_FS120_ROOT is required"
+}
+@file(qualify_genus.tcl) 11: if {![info exists ::env(AQUILA_SDC)]} {
+  error "AQUILA_SDC is required"
+}
+@file(qualify_genus.tcl) 15: set repo $::env(AQUILA_REPO_ROOT)
+@file(qualify_genus.tcl) 16: set fs120 $::env(AQUILA_FS120_ROOT)
+@file(qualify_genus.tcl) 17: set sdc $::env(AQUILA_SDC)
+@file(qualify_genus.tcl) 18: set filelist "$repo/cadence/genus/qualify_asic_filelist.f"
+@file(qualify_genus.tcl) 19: set ss_lib "$fs120/liberty/lib_flow_ss/tsl18fs120_scl_ss.lib"
+@file(qualify_genus.tcl) 21: set_db init_lib_search_path [list "$fs120/liberty/lib_flow_ss" "$fs120/verilog"]
+  Setting attribute of root '/': 'init_lib_search_path' = /home/24bvd1009/Desktop/stdcell/fs120/liberty/lib_flow_ss /home/24bvd1009/Desktop/stdcell/fs120/verilog
+@file(qualify_genus.tcl) 22: set_db init_hdl_search_path [list "$repo/rtl" "$repo/rtl/asic"]
+  Setting attribute of root '/': 'init_hdl_search_path' = /home/24bvd1009/bolter/Aquila-MK2/rtl /home/24bvd1009/bolter/Aquila-MK2/rtl/asic
+@file(qualify_genus.tcl) 23: read_libs $ss_lib
+Error   : File error. [FILE-100] [::legacy::set_attribute]
+        : Cannot open file '/home/24bvd1009/Desktop/stdcell/fs120/liberty/lib_flow_ss/tsl18fs120_scl_ss.lib'. File not found.
+        : Make sure that the file is a readable regular file and has the specified name.
+Error   : A library file does not exist. [LBR-68] [::legacy::set_attribute]
+        : File '/home/24bvd1009/Desktop/stdcell/fs120/liberty/lib_flow_ss/tsl18fs120_scl_ss.lib' could not be found. File '<none>' was the last file that was successfully read in.
+        : Make sure that the library file exists or check for a typo in the file name.
+Error   : The data value for this attribute is invalid. [TUI-24] [::legacy::set_attribute]
+        : The value '  { /home/24bvd1009/Desktop/stdcell/fs120/liberty/lib_flow_ss/tsl18fs120_scl_ss.lib } ' cannot be set for attribute 'library'.
+        : To see the usage/description for this attribute, type '::legacy::set_attribute -h <attr_name> *' (in legacy UI mode) or 'help * <attr_name> -detail' (in CUI mode).
+#@ End verbose source ./cadence/genus/qualify_genus.tcl
+1
+Encountered problems processing file: cadence/genus/qualify_genus.tcl
+
+Lic Summary:
+[15:33:28.504579] Cdslmd servers: cadence-c2s
+[15:33:28.504584] Feature usage summary:
+[15:33:28.504585] Genus_Synthesis
+
